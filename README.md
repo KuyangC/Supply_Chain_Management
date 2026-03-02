@@ -1,36 +1,220 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Supply Chain Management System
 
-## Getting Started
+> Web-based dashboard for tracking products, inventory, and shipments across multiple locations.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Preview
+
+| Dashboard | Products | Log |
+|----------|----------|-----------|
+| ![Dashboard](docs/preview/dashboard.png) | ![Products](docs/preview/product.png) | ![Log](docs/preview/log.png) |
+
+---
+
+## Features
+
+### Core Features
+- **Dashboard** - Overview with summary cards, charts, and recent activity
+- **Product Management** - Manage products with SKU, categories, and stock levels
+- **Inventory Tracking** - Real-time stock across multiple locations
+- **Shipment Tracking** - Track shipments with status updates
+- **User Management** - Manage users with roles and permissions
+- **Analytics** - Reports with export options (PDF, Excel, CSV)
+- **Event Logs** - Transaction history timeline
+- **Settings** - Profile and notification preferences
+
+### UI/UX
+- Modern design with dark sidebar and clean layout
+- Responsive design
+- Toast notifications
+- Route protection with authentication
+
+---
+
+## Tech Stack
+
+| Category | Technology |
+|----------|-----------|
+| Framework | Next.js 15 (App Router) |
+| UI Library | React 19 |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 4 |
+| Components | shadcn/ui (Radix UI) |
+| Icons | Lucide React |
+| State Management | TanStack Query v5 |
+| Charts | Recharts |
+| Auth | JWT (Cookie-based) |
+
+---
+
+## Project Structure
+
+```
+supply-chain-tracking/
+├── app/
+│   ├── (auth)/              # Auth pages (no sidebar/header)
+│   │   ├── login/
+│   │   └── register/
+│   ├── (main)/              # Protected pages (with sidebar/header)
+│   │   ├── page.tsx         # Dashboard
+│   │   ├── analytics/
+│   │   ├── inventory/
+│   │   ├── products/
+│   │   ├── shipments/
+│   │   ├── settings/
+│   │   ├── users/
+│   │   └── event-logs/
+│   ├── layout.tsx           # Root layout
+│   └── globals.css          # Global styles
+│
+├── components/
+│   ├── ui/                  # shadcn/ui components
+│   ├── layout/              # Layout components
+│   ├── auth/                # Auth components
+│   └── shared/              # Reusable components
+│
+├── lib/
+│   ├── query-client.tsx     # TanStack Query setup
+│   ├── utils.ts             # Helper functions
+│   ├── api.ts               # API client
+│   └── constants.ts         # App constants
+│
+├── hooks/
+│   └── use-toast.ts         # Toast notifications
+│
+├── types/
+│   └── index.ts             # TypeScript types
+│
+├── docs/
+│   └── preview/             # Preview screenshots
+│
+├── proxy.ts                 # Next.js 16 middleware (auth)
+├── tailwind.config.ts
+├── tsconfig.json
+└── package.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Installation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Prerequisites
+- Node.js 18+
+- npm or yarn or pnpm
 
-## Learn More
+### Setup
 
-To learn more about Next.js, take a look at the following resources:
+1. Clone the repository
+   ```bash
+   git clone https://github.com/KuyangC/Supply_Chain_Management.git
+   cd Supply_Chain_Management
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Install dependencies
+   ```bash
+   npm install
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Run development server
+   ```bash
+   npm run dev
+   ```
 
-## Deploy on Vercel
+4. Open browser
+   ```
+   http://localhost:3000
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Authentication
+
+Currently uses **dummy authentication** for frontend testing:
+
+- Any email/password combination works
+- Stores auth token in localStorage + cookie
+- Auto-redirect to login if not authenticated
+
+**Note:** This will be replaced with real backend API authentication.
+
+---
+
+## Pages
+
+| Route | Page | Description |
+|-------|------|-------------|
+| /login | Login | Sign in page |
+| /register | Register | Create account |
+| / | Dashboard | Overview with stats and charts |
+| /products | Products | Product catalog management |
+| /inventory | Inventory | Stock levels by location |
+| /shipments | Shipments | Shipment tracking |
+| /users | Users | User management |
+| /analytics | Analytics | Reports and exports |
+| /event-logs | Event Logs | Transaction history |
+| /settings | Settings | Profile & preferences |
+
+---
+
+## Design System
+
+### Colors
+```css
+/* Primary */
+--primary: #3b82f6;      /* Blue */
+--success: #10b981;      /* Green */
+--warning: #f59e0b;      /* Amber */
+--danger: #ef4444;       /* Red */
+
+/* Background */
+--bg-sidebar: #1e293b;   /* Dark Navy */
+--bg-main: #f8fafc;      /* Light Gray */
+--bg-card: #ffffff;      /* White */
+```
+
+### Components
+- **Buttons** - Primary (blue), Secondary (white with border)
+- **Tables** - White background, alternating rows
+- **Status Badges** - Colored backgrounds (green, blue, amber, red, gray)
+- **Cards** - White with subtle shadow
+
+---
+
+## Related Projects
+
+- **Backend API** - [supply-chain-backend](https://github.com/KuyangC/supply-chain-backend)
+  - NestJS + Prisma + MySQL
+
+---
+
+## Roadmap
+
+- [ ] Connect to real backend API
+- [ ] Implement real authentication (JWT)
+- [ ] Add form validation
+- [ ] Create modal components for Add/Edit
+- [ ] Add PDF/Excel export functionality
+- [ ] Real-time updates (WebSocket)
+- [ ] Mobile app (React Native)
+
+---
+
+## License
+
+This project is private and proprietary.
+
+---
+
+## Authors
+
+- **KuyangC** - [@KuyangC](https://github.com/KuyangC)
+
+---
+
+## Acknowledgments
+
+- [shadcn/ui](https://ui.shadcn.com/) - UI components
+- [Lucide](https://lucide.dev/) - Icons
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Next.js](https://nextjs.org/) - Framework
