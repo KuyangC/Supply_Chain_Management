@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -47,12 +47,20 @@ interface SidebarProps {
  */
 export function AppSidebar({ className }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = () => {
-    // TODO: Implement logout logic
-    console.log("Logout clicked");
-    // Clear auth token, redirect to login, etc.
+    // Clear auth token from localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
+
+      // Clear the auth cookie (set to expired)
+      document.cookie = "auth_token=; path=/; max-age=0; SameSite=lax";
+    }
+    // Redirect to login page
+    router.push("/login");
   };
 
   return (

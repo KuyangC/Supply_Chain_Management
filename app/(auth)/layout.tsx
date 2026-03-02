@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { QueryClientProvider } from "@/lib/query-client";
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
@@ -15,24 +13,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Supply Chain Tracking System",
-  description: "Track products, inventory, and shipments across your supply chain",
+  title: "Sign In - Supply Chain Tracking",
+  description: "Sign in to your account to access the supply chain tracking dashboard",
 };
 
-export default function RootLayout({
+/**
+ * Auth Layout
+ *
+ * Used for login and register pages without sidebar and header.
+ * This is a complete layout override with its own html/body structure
+ * to ensure no sidebar or header is rendered on auth pages.
+ */
+export default function AuthLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <QueryClientProvider>
-          {children}
-          <Toaster />
-        </QueryClientProvider>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

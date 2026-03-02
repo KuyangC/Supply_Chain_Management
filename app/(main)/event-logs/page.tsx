@@ -27,7 +27,7 @@ export default function EventLogsPage() {
           trackingId: "TXF001",
           location: "-6.2088, 106.8456",
           by: "Courier",
-          temperature: "25°C",
+          temperature: "25C",
           notes: "Shipment picked up",
         },
         {
