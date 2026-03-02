@@ -1,4 +1,6 @@
 import { SummaryCard } from "@/components/shared/summary-card";
+import { InventoryFlowChart } from "@/components/shared/inventory-flow-chart";
+import { ShipmentStatusChart } from "@/components/shared/shipment-status-chart";
 import {
   Table,
   TableBody,
@@ -187,11 +189,8 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          <div className="mt-6 h-64 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
-            <div className="text-center">
-              <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-              <span className="text-sm text-gray-400">Chart Placeholder</span>
-            </div>
+          <div className="mt-6">
+            <InventoryFlowChart />
           </div>
         </div>
 
@@ -205,11 +204,8 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          <div className="mt-6 h-64 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
-            <div className="text-center">
-              <Truck className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-              <span className="text-sm text-gray-400">Chart Placeholder</span>
-            </div>
+          <div className="mt-6">
+            <ShipmentStatusChart />
           </div>
         </div>
       </div>
