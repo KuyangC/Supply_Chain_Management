@@ -1,65 +1,297 @@
-import Image from "next/image";
+import { SummaryCard } from "@/components/shared/summary-card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { StatusBadge } from "@/components/shared/status-badge";
+import {
+  Package,
+  Warehouse,
+  Truck,
+  AlertTriangle,
+  Clock,
+  TrendingUp,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import Link from "next/link";
 
-export default function Home() {
+/**
+ * Dashboard Page
+ *
+ * Main dashboard showing summary statistics, charts, and recent activity
+ * Updated to match Figma design
+ */
+export default function DashboardPage() {
+  // Mock data - replace with actual API calls
+  const summaryData = [
+    {
+      title: "Total Products",
+      value: 150,
+      icon: Package,
+      trend: { value: "+5%", direction: "up" as const },
+    },
+    {
+      title: "Locations",
+      value: 5,
+      icon: Warehouse,
+      trend: { value: "+1", direction: "up" as const },
+    },
+    {
+      title: "Shipments",
+      value: 25,
+      icon: Truck,
+      trend: { value: "+3", direction: "up" as const },
+    },
+    {
+      title: "Low Stock",
+      value: 8,
+      icon: AlertTriangle,
+      trend: { value: "-2", direction: "down" as const },
+      variant: "warning" as const,
+    },
+    {
+      title: "Expiring Soon",
+      value: 12,
+      icon: Clock,
+      trend: { value: "+4", direction: "up" as const },
+      variant: "danger" as const,
+    },
+    {
+      title: "In Transit",
+      value: 18,
+      icon: TrendingUp,
+      trend: { value: "+6", direction: "up" as const },
+      variant: "info" as const,
+    },
+  ];
+
+  const recentShipments = [
+    {
+      id: "TXF001",
+      from: "WH-001",
+      to: "Store-A",
+      product: "Wireless Mouse",
+      status: "in_transit",
+      date: "2025-03-01",
+    },
+    {
+      id: "TXF002",
+      from: "WH-001",
+      to: "Store-B",
+      product: "USB Cable",
+      status: "pending",
+      date: "2025-03-01",
+    },
+    {
+      id: "TXF003",
+      from: "WH-002",
+      to: "Store-C",
+      product: "Keyboard",
+      status: "delivered",
+      date: "2025-02-28",
+    },
+    {
+      id: "TXF004",
+      from: "WH-001",
+      to: "Store-A",
+      product: "Monitor",
+      status: "confirmed",
+      date: "2025-02-28",
+    },
+    {
+      id: "TXF005",
+      from: "WH-002",
+      to: "Store-B",
+      product: "Webcam",
+      status: "picked_up",
+      date: "2025-02-27",
+    },
+  ];
+
+  const systemAlerts = [
+    {
+      id: 1,
+      type: "warning",
+      title: "Low Stock Alert",
+      message: "5 products are running low on stock",
+      time: "2 hours ago",
+    },
+    {
+      id: 2,
+      type: "danger",
+      title: "Expiry Warning",
+      message: "3 batches expiring within 7 days",
+      time: "5 hours ago",
+    },
+    {
+      id: 3,
+      type: "success",
+      title: "Shipment Delivered",
+      message: "TXF003 has been successfully delivered",
+      time: "1 day ago",
+    },
+  ];
+
+  const getAlertIcon = (type: string) => {
+    switch (type) {
+      case "warning":
+        return <AlertCircle className="h-5 w-5 text-[#f59e0b]" />;
+      case "danger":
+        return <AlertCircle className="h-5 w-5 text-[#ef4444]" />;
+      case "success":
+        return <CheckCircle2 className="h-5 w-5 text-[#10b981]" />;
+      default:
+        return <AlertCircle className="h-5 w-5 text-gray-400" />;
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Overview of your supply chain metrics and recent activity
+        </p>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {summaryData.map((item) => (
+          <SummaryCard
+            key={item.title}
+            title={item.title}
+            value={item.value}
+            icon={item.icon}
+            trend={item.trend}
+            variant={item.variant}
+          />
+        ))}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Inventory Flow Trend */}
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Inventory Flow Trend</h3>
+              <p className="text-sm text-gray-500">
+                Total inventory movement over time
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 h-64 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+            <div className="text-center">
+              <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+              <span className="text-sm text-gray-400">Chart Placeholder</span>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now asoy
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Shipment Status */}
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Shipment Status</h3>
+              <p className="text-sm text-gray-500">
+                Current shipment distribution
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 h-64 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+            <div className="text-center">
+              <Truck className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+              <span className="text-sm text-gray-400">Chart Placeholder</span>
+            </div>
+          </div>
         </div>
-      </main>
+      </div>
+
+      {/* Recent Shipments and System Alerts */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent Shipments Table */}
+        <div className="lg:col-span-2 rounded-xl border border-gray-100 bg-white shadow-sm">
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Recent Shipments</h3>
+              <p className="text-sm text-gray-500">
+                Latest shipment activity across all locations
+              </p>
+            </div>
+            <Link
+              href="/shipments"
+              className="flex items-center text-sm font-medium text-[#3b82f6] hover:text-[#2563eb] transition-colors"
+            >
+              View all
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </div>
+          <div className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-b border-gray-100">
+                  <TableHead className="text-gray-500 font-medium">Tracking ID</TableHead>
+                  <TableHead className="text-gray-500 font-medium">From</TableHead>
+                  <TableHead className="text-gray-500 font-medium">To</TableHead>
+                  <TableHead className="text-gray-500 font-medium">Product</TableHead>
+                  <TableHead className="text-gray-500 font-medium">Status</TableHead>
+                  <TableHead className="text-gray-500 font-medium">Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentShipments.map((shipment) => (
+                  <TableRow key={shipment.id} className="hover:bg-gray-50/50 border-b border-gray-50">
+                    <TableCell className="font-medium text-gray-900">{shipment.id}</TableCell>
+                    <TableCell className="text-gray-600">{shipment.from}</TableCell>
+                    <TableCell className="text-gray-600">{shipment.to}</TableCell>
+                    <TableCell className="text-gray-600">{shipment.product}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={shipment.status} type="shipment" />
+                    </TableCell>
+                    <TableCell className="text-gray-600">{shipment.date}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        {/* System Alerts */}
+        <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">System Alerts</h3>
+              <p className="text-sm text-gray-500">
+                Recent notifications and warnings
+              </p>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            {systemAlerts.map((alert) => (
+              <div
+                key={alert.id}
+                className="flex gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex-shrink-0 mt-0.5">
+                  {getAlertIcon(alert.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{alert.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{alert.message}</p>
+                  <p className="text-xs text-gray-400 mt-1">{alert.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
