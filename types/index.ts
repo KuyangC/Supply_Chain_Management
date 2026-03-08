@@ -1,52 +1,32 @@
-/**
- * Shared TypeScript Types for Supply Chain Tracking System
- * These types represent the data models shared between frontend and backend
- */
-
-/**
- * User Roles
- */
 export enum UserRole {
-  ADMIN = "admin",
-  MANAGER = "manager",
-  OPERATOR = "operator",
-  VIEWER = "viewer",
+  ADMIN = "ADMIN",
+  MANAGER = "MANAGER",
+  OPERATOR = "OPERATOR",
+  VIEWER = "VIEWER",
 }
 
-/**
- * User Status
- */
 export enum UserStatus {
   ACTIVE = "active",
   INACTIVE = "inactive",
   SUSPENDED = "suspended",
 }
 
-/**
- * Product Status
- */
 export enum ProductStatus {
   ACTIVE = "active",
   INACTIVE = "inactive",
   DISCONTINUED = "discontinued",
 }
 
-/**
- * Shipment Status
- */
 export enum ShipmentStatus {
-  PENDING = "pending",
-  CONFIRMED = "confirmed",
-  PICKED_UP = "picked_up",
-  IN_TRANSIT = "in_transit",
-  DELIVERED = "delivered",
-  FAILED = "failed",
-  CANCELLED = "cancelled",
+  PENDING = "PENDING",
+  CONFIRMED = "CONFIRMED",
+  PICKED_UP = "PICKED_UP",
+  IN_TRANSIT = "IN_TRANSIT",
+  DELIVERED = "DELIVERED",
+  FAILED = "FAILED",
+  CANCELLED = "CANCELLED",
 }
 
-/**
- * Adjustment Types
- */
 export enum AdjustmentType {
   INCREASE = "increase",
   DECREASE = "decrease",
@@ -54,9 +34,7 @@ export enum AdjustmentType {
   LOSS = "loss",
 }
 
-/**
- * Event Types
- */
+
 export enum EventType {
   CREATED = "created",
   CONFIRMED = "confirmed",

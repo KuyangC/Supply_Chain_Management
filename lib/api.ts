@@ -1,13 +1,5 @@
-/**
- * API Client Configuration
- * Handles all HTTP requests to the backend API
- */
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-/**
- * API Error class for handling API errors
- */
 export class ApiError extends Error {
   constructor(
     public message: string,
@@ -19,85 +11,63 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Request options interface
- */
 interface RequestOptions extends RequestInit {
-  params?: Record<string, string | number | boolean | undefined>;
-}
-
-/**
- * Build query string from params object
- */
-function buildQueryString(params: Record<string, string | number | boolean | undefined>): string {
-  const searchParams = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined) {
-      searchParams.append(key, String(value));
-    }
-  });
-  return searchParams.toString();
+  params?: Record<string, string | number | undefined>;
 }
 
 /**
  * Base API client with authentication handling
  */
-async function request<T>(
-  endpoint: string,
-  options: RequestOptions = {}
-): Promise<T> {
+async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
-  const queryString = params ? `?${buildQueryString(params)}` : "";
+
+  //query string
+  const queryString = params 
+  ? "?" + new URLSearchParams(
+    Object.entries(params)
+    .filter(([_, v]) => v !== undefined)
+    .map(([k, v]) => [k, String(v)])
+  ).toString()
+  :"";
+
   const url = `${API_URL}${endpoint}${queryString}`;
 
-  // Get token from localStorage (client-side only)
-  let headers: HeadersInit = {
+  // prepare headers
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...fetchOptions.headers,
   };
 
-  // Add auth token if available (only in browser)
+  if (fetchOptions.headers) {
+    Object.assign(headers, fetchOptions.headers);
+  }
+
+  // Add auth token client side only
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("auth_token");
     if (token) {
-      headers = {
-        ...headers,
-        Authorization: `Bearer ${token}`,
-      };
+      headers["Authorization"] = `Bearer ${token}`;
     }
   }
+  
+  // Fetch
+  const response = await fetch(url, {...fetchOptions, headers});
 
-  try {
-    const response = await fetch(url, {
-      ...fetchOptions,
-      headers,
-    });
+  // 204 No Content
+  if (response.status === 204) {
+    return undefined as T;
+  }
 
-    // Handle 204 No Content
-    if (response.status === 204) {
-      return undefined as T;
-    }
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new ApiError(
-        data.message || "An error occurred",
-        response.status,
-        data
-      );
-    }
-
-    return data;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
+  // Handle error
+  if (!response.ok){
+    const errorData = await response.json().catch(() => ({}));
     throw new ApiError(
-      error instanceof Error ? error.message : "Network error",
-      0
+      errorData.message || "Request failed",
+      response.status,
+      errorData
     );
   }
+
+  return response.json();
 }
 
 /**
@@ -131,5 +101,101 @@ export const api = {
   delete: <T>(endpoint: string, options?: RequestOptions) =>
     request<T>(endpoint, { ...options, method: "DELETE" }),
 };
+
+/**
+ * Auth API
+ */
+
+export interface LoginResponse {
+  access_token: string;
+  user: User;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: "ADMIN" | "MANAGER" | "OPERATOR" | "VIEWER";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const authApi = {
+  login: (email: string, password: string) =>
+    api.post<LoginResponse>("/auth/login", { email, password }),
+
+  register: (data: { email: string; name: string; password: string; role?: string}) =>
+    api.post<User>("/auth/register", data),
+};
+
+/**
+ * User API
+ */
+
+export const usersAPI = {
+  getAll: (params?: { page?: number; limit?: number }) =>
+    api.get<User[]>("/users", { params }),
+
+  getById: (id: string) =>
+    api.get<User>(`/users/${id}`),
+
+  create: (data: { email: string; name: string; password: string; role?: string }) =>
+    api.post<User>("/users", data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/users/${id}`),
+};
+
+/**
+ * Shipment API
+ */
+
+export interface Shipment {
+  id: string;
+  trackingId: string;
+  fromLocationId: string;
+  status: "PENDING" | "CONFIRMED" | "PICKED_UP" | "IN_TRANSIT" | "DELIVERED" | "FAILED" | "CANCELLED";
+  userId: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  fromLocation?: { id: string; name: string };
+  toLocation?: { id: string; name: string };
+  user?: { id: string; name: string };
+  items?: ShipmentItem[];
+}
+
+export interface ShipmentItem {
+  id: string;
+  shipmentId: string;
+  productId: string;
+  qty: number;
+  createdAt: string;
+  product?: { id: string; name: string; sku: string };
+}
+
+export const shipmentApi = {
+  getAll: (params?: { page?: number; limit?: number }) =>
+      api.get<Shipment[]>("/shipments", { params }),
+
+  getById: (id: string) =>
+    api.get<Shipment>(`/shipments/${id}`),
+
+  create: (data: {
+    trackingId: string;
+    fromLocationId: string;
+    toLocationId: string;
+    status?: string;
+    userId?: string;
+    notes?: string;
+  }) =>
+    api.post<Shipment>("/shipments", data),
+
+  update: (id: string, data: Partial<Shipment>) =>
+    api.patch<Shipment>(`/shipments/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/shipments/${id}`),
+}
 
 export default api;
