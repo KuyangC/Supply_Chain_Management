@@ -172,6 +172,12 @@ export const USER_STATUS_CONFIG = {
     bgColor: "bg-red-100",
     textColor: "text-red-700",
   },
+  pending: {
+    label: "Pending",
+    color: "gray" as const,
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-700",
+  },
 } as const;
 
 /**

@@ -1,6 +1,8 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Eye, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, MoreVertical, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -25,6 +27,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { useProducts } from "@/hooks/use-api-data";
+import { TableLoading, TableError, TableEmpty } from "@/components/shared/table-states";
+import { useEffect, useState } from "react";
 
 /**
  * Stock indicator component with colored dot
@@ -61,89 +66,24 @@ function StockIndicator({ stock }: { stock: number }) {
  * Updated to match Figma design
  */
 export default function ProductsPage() {
-  // Mock data - replace with actual API calls
-  const products = [
-    {
-      id: "1",
-      sku: "PROD-001",
-      name: "Wireless Mouse",
-      category: "Electronics",
-      unit: "pcs",
-      stock: 150,
-      status: "active",
-      tags: ["new", "featured"],
-    },
-    {
-      id: "2",
-      sku: "PROD-002",
-      name: "USB Cable",
-      category: "Electronics",
-      unit: "pcs",
-      stock: 5,
-      status: "active",
-      tags: [],
-    },
-    {
-      id: "3",
-      sku: "PROD-003",
-      name: "Keyboard",
-      category: "Electronics",
-      unit: "pcs",
-      stock: 75,
-      status: "active",
-      tags: ["sale"],
-    },
-    {
-      id: "4",
-      sku: "PROD-004",
-      name: "Monitor Stand",
-      category: "Accessories",
-      unit: "pcs",
-      stock: 0,
-      status: "inactive",
-      tags: [],
-    },
-    {
-      id: "5",
-      sku: "PROD-005",
-      name: "Webcam HD",
-      category: "Electronics",
-      unit: "pcs",
-      stock: 25,
-      status: "pending",
-      tags: ["new"],
-    },
-    {
-      id: "6",
-      sku: "PROD-006",
-      name: "USB-C Hub",
-      category: "Electronics",
-      unit: "pcs",
-      stock: 8,
-      status: "active",
-      tags: ["featured"],
-    },
-    {
-      id: "7",
-      sku: "PROD-007",
-      name: "Laptop Sleeve",
-      category: "Accessories",
-      unit: "pcs",
-      stock: 100,
-      status: "active",
-      tags: [],
-    },
-    {
-      id: "8",
-      sku: "PROD-008",
-      name: "Desk Lamp",
-      category: "Office",
-      unit: "pcs",
-      stock: 45,
-      status: "active",
-      tags: ["new"],
-    },
-  ];
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  const { data: products = [], isLoading, error, refetch } = useProducts();
+
+  // Filter products based on search and category
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
+      !searchQuery ||
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCategory =
+      categoryFilter === "all" ||
+      product.category.toLowerCase() === categoryFilter.toLowerCase();
+
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="space-y-6">
@@ -155,12 +95,23 @@ export default function ProductsPage() {
             Manage your product catalog and inventory
           </p>
         </div>
-        <Link href="/products/new">
-          <Button className="bg-[#3b82f6] text-white hover:bg-[#2563eb] rounded-lg px-4">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg"
+            onClick={() => refetch()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
           </Button>
-        </Link>
+          <Link href="/products/new">
+            <Button className="bg-[#3b82f6] text-white hover:bg-[#2563eb] rounded-lg px-4">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Product
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search and Filter Bar */}
@@ -171,9 +122,11 @@ export default function ProductsPage() {
             type="search"
             placeholder="Search products, shipments, users..."
             className="h-10 bg-white border-gray-200 pl-9 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#3b82f6]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select defaultValue="all">
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[160px] h-10 bg-white border-gray-200">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
@@ -202,8 +155,22 @@ export default function ProductsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {products.map((product) => (
-              <TableRow key={product.id} className="hover:bg-gray-50/50 border-b border-gray-50">
+            {isLoading ? (
+              <TableLoading colSpan={8} />
+            ) : error ? (
+              <TableError
+                colSpan={8}
+                message={error instanceof Error ? error.message : "Failed to load products"}
+                onRetry={() => refetch()}
+              />
+            ) : filteredProducts.length === 0 ? (
+              <TableEmpty
+                colSpan={8}
+                message={products.length === 0 ? "No products found. Add your first product to get started." : "No products match your filters."}
+              />
+            ) : (
+              filteredProducts.map((product) => (
+                <TableRow key={product.id} className="hover:bg-gray-50/50 border-b border-gray-50">
                 <TableCell>
                   <Link
                     href={`/products/${product.id}`}
@@ -221,7 +188,7 @@ export default function ProductsPage() {
                   <StockIndicator stock={product.stock} />
                 </TableCell>
                 <TableCell>
-                  {product.tags.length > 0 ? (
+                  {product.tags && product.tags.length > 0 ? (
                     <div className="flex gap-1">
                       {product.tags.map((tag) => (
                         <Badge
@@ -279,7 +246,8 @@ export default function ProductsPage() {
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

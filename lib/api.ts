@@ -30,7 +30,7 @@ export interface Product {
   unit: string;
   stock: number;
   minStock: number;
-  tags?: string;
+  tags?: string[];
   status: string;
   createdAt: string;
   updatedAt: string;

@@ -1,5 +1,7 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { Plus, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Search, MoreHorizontal, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -18,6 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUsers } from "@/hooks/use-api-data";
+import { TableLoading, TableError, TableEmpty } from "@/components/shared/table-states";
+import { useState } from "react";
 
 /**
  * Users List Page
@@ -25,56 +30,31 @@ import {
  * Displays all users (admin/manager only)
  */
 export default function UsersPage() {
-  // Mock data - replace with actual API calls
-  const users = [
-    {
-      id: "1",
-      name: "John Doe",
-      email: "john.doe@example.com",
-      role: "admin",
-      location: "WH-001",
-      status: "active",
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      role: "manager",
-      location: "Store-A",
-      status: "active",
-    },
-    {
-      id: "3",
-      name: "Bob Johnson",
-      email: "bob.johnson@example.com",
-      role: "operator",
-      location: "WH-002",
-      status: "active",
-    },
-    {
-      id: "4",
-      name: "Alice Williams",
-      email: "alice.williams@example.com",
-      role: "viewer",
-      location: "Store-B",
-      status: "inactive",
-    },
-    {
-      id: "5",
-      name: "Charlie Brown",
-      email: "charlie.brown@example.com",
-      role: "operator",
-      location: "WH-001",
-      status: "suspended",
-    },
-  ];
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+
+  const { data: users = [], isLoading, error, refetch } = useUsers();
 
   const roleLabels: Record<string, string> = {
-    admin: "Admin",
-    manager: "Manager",
-    operator: "Operator",
-    viewer: "Viewer",
+    ADMIN: "Admin",
+    MANAGER: "Manager",
+    OPERATOR: "Operator",
+    VIEWER: "Viewer",
   };
+
+  // Filter users based on search and role
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      !searchQuery ||
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole =
+      roleFilter === "all" ||
+      user.role.toLowerCase() === roleFilter.toLowerCase();
+
+    return matchesSearch && matchesRole;
+  });
 
   return (
     <div className="space-y-6">
@@ -86,12 +66,22 @@ export default function UsersPage() {
             Manage user accounts and permissions
           </p>
         </div>
-        <Link href="/users/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
           </Button>
-        </Link>
+          <Link href="/users/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add User
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search and Filter Bar */}
@@ -102,9 +92,11 @@ export default function UsersPage() {
             type="search"
             placeholder="Search users..."
             className="pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select defaultValue="all">
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
@@ -143,27 +135,42 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{roleLabels[user.role]}</TableCell>
-                <TableCell>{user.location}</TableCell>
-                <TableCell>
-                  <StatusBadge status={user.status} type="user" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/users/${user.id}`}>View</Link>
-                    </Button>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/users/${user.id}/edit`}>Edit</Link>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {isLoading ? (
+              <TableLoading colSpan={6} />
+            ) : error ? (
+              <TableError
+                colSpan={6}
+                message={error instanceof Error ? error.message : "Failed to load users"}
+                onRetry={() => refetch()}
+              />
+            ) : filteredUsers.length === 0 ? (
+              <TableEmpty
+                colSpan={6}
+                message={users.length === 0 ? "No users found." : "No users match your filters."}
+              />
+            ) : (
+              filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{roleLabels[user.role] || user.role}</TableCell>
+                  <TableCell>-</TableCell>
+                  <TableCell>
+                    <StatusBadge status="active" type="user" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/users/${user.id}`}>View</Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/users/${user.id}/edit`}>Edit</Link>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

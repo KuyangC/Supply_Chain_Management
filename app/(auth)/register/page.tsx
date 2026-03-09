@@ -25,6 +25,8 @@ import {
 import { PasswordInput } from "@/components/auth/password-input";
 import { PasswordStrength } from "@/components/auth/password-strength";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { authApi, ApiError } from "@/lib/api";
+import { useRegister } from "@/hooks/use-api-data";
 
 type FormData = {
   fullName: string;
@@ -62,7 +64,7 @@ const roles: { value: UserRole; label: string; description: string }[] = [
  */
 export default function RegisterPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const registerMutation = useRegister();
   const [formData, setFormData] = React.useState<FormData>({
     fullName: "",
     email: "",
@@ -73,6 +75,7 @@ export default function RegisterPage() {
   });
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [isSuccess, setIsSuccess] = React.useState(false);
+  const isLoading = registerMutation.isPending;
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -129,41 +132,42 @@ export default function RegisterPage() {
       return;
     }
 
-    setIsLoading(true);
     setErrors({});
 
-    try {
-      // Mock registration - replace with actual API call
-      console.log("Registration attempt:", {
-        fullName: formData.fullName,
+    // Convert role to uppercase for API
+    const roleUpper = formData.role.toUpperCase() as "ADMIN" | "MANAGER" | "OPERATOR" | "VIEWER";
+
+    registerMutation.mutate(
+      {
         email: formData.email,
-        role: formData.role,
-        password: "******",
-      });
+        name: formData.fullName,
+        password: formData.password,
+        role: roleUpper,
+      },
+      {
+        onSuccess: () => {
+          setIsSuccess(true);
+          setTimeout(() => {
+            router.push("/login?registered=true");
+          }, 2000);
+        },
+        onError: (error) => {
+          console.error("Registration error:", error);
 
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Mock validation - in production, this would be an API error
-      if (formData.email === "existing@example.com") {
-        setErrors({ general: "An account with this email already exists" });
-        return;
+          if (error instanceof ApiError) {
+            if (error.status === 409) {
+              setErrors({ general: "An account with this email already exists" });
+            } else if (error.status === 400) {
+              setErrors({ general: (error.data as { message?: string })?.message || "Invalid input data" });
+            } else {
+              setErrors({ general: error.message || "Registration failed" });
+            }
+          } else {
+            setErrors({ general: "An unexpected error occurred. Please try again." });
+          }
+        },
       }
-
-      // Successful registration
-      setIsSuccess(true);
-      console.log("Registration successful");
-
-      // Redirect to login after showing success message
-      setTimeout(() => {
-        router.push("/login?registered=true");
-      }, 2000);
-    } catch (error) {
-      console.error("Registration error:", error);
-      setErrors({ general: "An unexpected error occurred. Please try again." });
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   const updateField = <K extends keyof FormData>(

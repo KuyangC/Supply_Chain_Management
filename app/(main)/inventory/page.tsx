@@ -1,6 +1,8 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, AlertCircle, Calendar } from "lucide-react";
+import { Search, AlertCircle, Calendar, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -18,6 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
+import { useInventory } from "@/hooks/use-api-data";
+import { TableLoading, TableError, TableEmpty } from "@/components/shared/table-states";
+import { useState } from "react";
 
 /**
  * Stock status indicator with colored dot
@@ -64,86 +69,31 @@ function ExpiryWarning({ expiryDate, isExpiring }: { expiryDate: string | null; 
  * Updated to match Figma design
  */
 export default function InventoryPage() {
-  // Mock data - replace with actual API calls
-  const inventory = [
-    {
-      id: "1",
-      product: "Wireless Mouse",
-      sku: "PROD-001",
-      location: "WH-001",
-      batch: "BATCH-001",
-      quantity: 100,
-      available: 90,
-      reserved: 10,
-      expiryDate: null,
-    },
-    {
-      id: "2",
-      product: "Wireless Mouse",
-      sku: "PROD-001",
-      location: "Store-A",
-      batch: "BATCH-001",
-      quantity: 50,
-      available: 50,
-      reserved: 0,
-      expiryDate: null,
-    },
-    {
-      id: "3",
-      product: "USB Cable",
-      sku: "PROD-002",
-      location: "WH-001",
-      batch: "BATCH-002",
-      quantity: 5,
-      available: 5,
-      reserved: 0,
-      expiryDate: "2024-12-31",
-    },
-    {
-      id: "4",
-      product: "Keyboard",
-      sku: "PROD-003",
-      location: "WH-002",
-      batch: "BATCH-003",
-      quantity: 75,
-      available: 70,
-      reserved: 5,
-      expiryDate: null,
-    },
-    {
-      id: "5",
-      product: "Webcam HD",
-      sku: "PROD-005",
-      location: "WH-001",
-      batch: "BATCH-004",
-      quantity: 25,
-      available: 25,
-      reserved: 0,
-      expiryDate: null,
-    },
-    {
-      id: "6",
-      product: "Monitor Stand",
-      sku: "PROD-004",
-      location: "WH-002",
-      batch: "BATCH-005",
-      quantity: 2,
-      available: 2,
-      reserved: 0,
-      expiryDate: "2025-03-15",
-    },
-    {
-      id: "7",
-      product: "Laptop Sleeve",
-      sku: "PROD-007",
-      location: "Store-B",
-      batch: "BATCH-006",
-      quantity: 30,
-      available: 25,
-      reserved: 5,
-      expiryDate: null,
-    },
-  ];
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("all");
+
+  const { data: inventory = [], isLoading, error, refetch } = useInventory();
+
+  // Filter inventory based on search and location
+  const filteredInventory = inventory.filter((item) => {
+    const productName = item.product?.name || "";
+    const productSku = item.product?.sku || "";
+    const locationName = item.location?.name || "";
+    const batch = item.batch || "";
+
+    const matchesSearch =
+      !searchQuery ||
+      productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      productSku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      locationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      batch.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesLocation =
+      locationFilter === "all" ||
+      locationName.toLowerCase().includes(locationFilter.toLowerCase());
+
+    return matchesSearch && matchesLocation;
+  });
 
   const getStockStatus = (available: number): "sufficient" | "low" | "critical" => {
     if (available === 0) return "critical";
@@ -173,6 +123,15 @@ export default function InventoryPage() {
           >
             Adjust Stock
           </Button>
+          <Button
+            variant="outline"
+            className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg"
+            onClick={() => refetch()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
           <Button className="bg-[#3b82f6] text-white hover:bg-[#2563eb] rounded-lg">
             Transfer Stock
           </Button>
@@ -187,6 +146,8 @@ export default function InventoryPage() {
             type="search"
             placeholder="Search products, shipments, users..."
             className="h-10 bg-white border-gray-200 pl-9 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#3b82f6]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <Select defaultValue="all">
@@ -228,52 +189,67 @@ export default function InventoryPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {inventory.map((item) => (
-              <TableRow key={item.id} className="hover:bg-gray-50/50 border-b border-gray-50">
-                <TableCell className="font-medium text-gray-900">
-                  <Link
-                    href={`/products/${item.id}`}
-                    className="hover:text-[#3b82f6] hover:underline transition-colors"
-                  >
-                    {item.product}
-                  </Link>
-                </TableCell>
-                <TableCell className="font-mono text-sm text-gray-600">
-                  {item.sku}
-                </TableCell>
-                <TableCell className="text-gray-600">{item.location}</TableCell>
-                <TableCell className="font-mono text-sm text-gray-600">
-                  {item.batch}
-                </TableCell>
-                <TableCell className="text-gray-700">{item.quantity}</TableCell>
-                <TableCell>
-                  <StockStatusDot status={getStockStatus(item.available)} />
-                  <span className="ml-2 text-sm text-gray-600">{item.available}</span>
-                </TableCell>
-                <TableCell className="text-gray-600">{item.reserved}</TableCell>
-                <TableCell>
-                  <ExpiryWarning expiryDate={item.expiryDate} isExpiring={isExpiring(item.expiryDate)} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            {isLoading ? (
+              <TableLoading colSpan={9} />
+            ) : error ? (
+              <TableError
+                colSpan={9}
+                message={error instanceof Error ? error.message : "Failed to load inventory"}
+                onRetry={() => refetch()}
+              />
+            ) : filteredInventory.length === 0 ? (
+              <TableEmpty
+                colSpan={9}
+                message={inventory.length === 0 ? "No inventory items found." : "No inventory items match your filters."}
+              />
+            ) : (
+              filteredInventory.map((item) => (
+                <TableRow key={item.id} className="hover:bg-gray-50/50 border-b border-gray-50">
+                  <TableCell className="font-medium text-gray-900">
+                    <Link
+                      href={`/products/${item.productId}`}
+                      className="hover:text-[#3b82f6] hover:underline transition-colors"
                     >
-                      Adjust
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-[#3b82f6] hover:text-[#2563eb] hover:bg-blue-50"
-                    >
-                      Transfer
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                      {item.product?.name || "Unknown"}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm text-gray-600">
+                    {item.product?.sku || "-"}
+                  </TableCell>
+                  <TableCell className="text-gray-600">{item.location?.name || "-"}</TableCell>
+                  <TableCell className="font-mono text-sm text-gray-600">
+                    {item.batch || "-"}
+                  </TableCell>
+                  <TableCell className="text-gray-700">{item.qty}</TableCell>
+                  <TableCell>
+                    <StockStatusDot status={getStockStatus(item.available)} />
+                    <span className="ml-2 text-sm text-gray-600">{item.available}</span>
+                  </TableCell>
+                  <TableCell className="text-gray-600">{item.reserved}</TableCell>
+                  <TableCell>
+                    <ExpiryWarning expiryDate={item.expiry || null} isExpiring={isExpiring(item.expiry || null)} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      >
+                        Adjust
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-[#3b82f6] hover:text-[#2563eb] hover:bg-blue-50"
+                      >
+                        Transfer
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
