@@ -1,5 +1,100 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+// ============================================================================
+// Types
+// ============================================================================
+
+export type UserRole = "ADMIN" | "MANAGER" | "OPERATOR" | "VIEWER";
+
+export type ShipmentStatus = "PENDING" | "CONFIRMED" | "PICKED_UP" | "IN_TRANSIT" | "DELIVERED" | "FAILED" | "CANCELLED";
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  user: User;
+}
+
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  category: string;
+  unit: string;
+  stock: number;
+  minStock: number;
+  tags?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Location {
+  id: string;
+  name: string;
+  address?: string;
+  type: string;
+  createdAt: string;
+}
+
+export interface Inventory {
+  id: string;
+  productId: string;
+  locationId: string;
+  batch?: string;
+  qty: number;
+  reserved: number;
+  available: number;
+  expiry?: string;
+  createdAt: string;
+  updatedAt: string;
+  product?: {
+    id: string;
+    name: string;
+    sku: string;
+  };
+  location?: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface ShipmentItem {
+  id: string;
+  shipmentId: string;
+  productId: string;
+  qty: number;
+  createdAt: string;
+  product?: { id: string; name: string; sku: string };
+}
+
+export interface Shipment {
+  id: string;
+  trackingId: string;
+  fromLocationId: string;
+  toLocationId: string;
+  status: ShipmentStatus;
+  userId: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  fromLocation?: { id: string; name: string };
+  toLocation?: { id: string; name: string };
+  user?: { id: string; name: string };
+  items?: ShipmentItem[];
+}
+
+// ============================================================================
+// API Error
+// ============================================================================
+
 export class ApiError extends Error {
   constructor(
     public message: string,
@@ -11,24 +106,29 @@ export class ApiError extends Error {
   }
 }
 
+// ============================================================================
+// Request Options
+// ============================================================================
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | undefined>;
 }
 
-/**
- * Base API client with authentication handling
- */
+// ============================================================================
+// Base Request Function
+// ============================================================================
+
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
 
-  //query string
-  const queryString = params 
-  ? "?" + new URLSearchParams(
-    Object.entries(params)
-    .filter(([_, v]) => v !== undefined)
-    .map(([k, v]) => [k, String(v)])
-  ).toString()
-  :"";
+  // query string
+  const queryString = params
+    ? "?" + new URLSearchParams(
+      Object.entries(params)
+        .filter(([_, v]) => v !== undefined)
+        .map(([k, v]) => [k, String(v)])
+    ).toString()
+    : "";
 
   const url = `${API_URL}${endpoint}${queryString}`;
 
@@ -48,9 +148,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
       headers["Authorization"] = `Bearer ${token}`;
     }
   }
-  
+
   // Fetch
-  const response = await fetch(url, {...fetchOptions, headers});
+  const response = await fetch(url, { ...fetchOptions, headers });
 
   // 204 No Content
   if (response.status === 204) {
@@ -58,7 +158,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   }
 
   // Handle error
-  if (!response.ok){
+  if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new ApiError(
       errorData.message || "Request failed",
@@ -70,9 +170,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   return response.json();
 }
 
-/**
- * API Client Object
- */
+// ============================================================================
+// Base API Client
+// ============================================================================
+
 export const api = {
   get: <T>(endpoint: string, options?: RequestOptions) =>
     request<T>(endpoint, { ...options, method: "GET" }),
@@ -102,37 +203,23 @@ export const api = {
     request<T>(endpoint, { ...options, method: "DELETE" }),
 };
 
-/**
- * Auth API
- */
-
-export interface LoginResponse {
-  access_token: string;
-  user: User;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: "ADMIN" | "MANAGER" | "OPERATOR" | "VIEWER";
-  createdAt: string;
-  updatedAt: string;
-}
+// ============================================================================
+// Auth API
+// ============================================================================
 
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<LoginResponse>("/auth/login", { email, password }),
 
-  register: (data: { email: string; name: string; password: string; role?: string}) =>
+  register: (data: { email: string; name: string; password: string; role?: string }) =>
     api.post<User>("/auth/register", data),
 };
 
-/**
- * User API
- */
+// ============================================================================
+// Users API
+// ============================================================================
 
-export const usersAPI = {
+export const usersApi = {
   getAll: (params?: { page?: number; limit?: number }) =>
     api.get<User[]>("/users", { params }),
 
@@ -142,41 +229,104 @@ export const usersAPI = {
   create: (data: { email: string; name: string; password: string; role?: string }) =>
     api.post<User>("/users", data),
 
+  update: (id: string, data: Partial<Pick<User, "name" | "email" | "role">>) =>
+    api.patch<User>(`/users/${id}`, data),
+
   delete: (id: string) =>
     api.delete<void>(`/users/${id}`),
 };
 
-/**
- * Shipment API
- */
+// ============================================================================
+// Products API
+// ============================================================================
 
-export interface Shipment {
-  id: string;
-  trackingId: string;
-  fromLocationId: string;
-  status: "PENDING" | "CONFIRMED" | "PICKED_UP" | "IN_TRANSIT" | "DELIVERED" | "FAILED" | "CANCELLED";
-  userId: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  fromLocation?: { id: string; name: string };
-  toLocation?: { id: string; name: string };
-  user?: { id: string; name: string };
-  items?: ShipmentItem[];
-}
-
-export interface ShipmentItem {
-  id: string;
-  shipmentId: string;
-  productId: string;
-  qty: number;
-  createdAt: string;
-  product?: { id: string; name: string; sku: string };
-}
-
-export const shipmentApi = {
+export const productsApi = {
   getAll: (params?: { page?: number; limit?: number }) =>
-      api.get<Shipment[]>("/shipments", { params }),
+    api.get<Product[]>("/products", { params }),
+
+  getById: (id: string) =>
+    api.get<Product>(`/products/${id}`),
+
+  create: (data: {
+    sku: string;
+    name: string;
+    category: string;
+    unit: string;
+    stock: number;
+    minStock: number;
+    tags?: string;
+    status?: string;
+  }) =>
+    api.post<Product>("/products", data),
+
+  update: (id: string, data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>) =>
+    api.patch<Product>(`/products/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/products/${id}`),
+};
+
+// ============================================================================
+// Locations API
+// ============================================================================
+
+export const locationsApi = {
+  getAll: (params?: { page?: number; limit?: number }) =>
+    api.get<Location[]>("/locations", { params }),
+
+  getById: (id: string) =>
+    api.get<Location>(`/locations/${id}`),
+
+  create: (data: {
+    name: string;
+    address?: string;
+    type: string;
+  }) =>
+    api.post<Location>("/locations", data),
+
+  update: (id: string, data: Partial<Omit<Location, "id" | "createdAt">>) =>
+    api.patch<Location>(`/locations/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/locations/${id}`),
+};
+
+// ============================================================================
+// Inventory API
+// ============================================================================
+
+export const inventoryApi = {
+  getAll: (params?: { page?: number; limit?: number; productId?: string; locationId?: string }) =>
+    api.get<Inventory[]>("/inventory", { params }),
+
+  getById: (id: string) =>
+    api.get<Inventory>(`/inventory/${id}`),
+
+  create: (data: {
+    productId: string;
+    locationId: string;
+    batch?: string;
+    qty: number;
+    reserved?: number;
+    available?: number;
+    expiry?: string;
+  }) =>
+    api.post<Inventory>("/inventory", data),
+
+  update: (id: string, data: Partial<Omit<Inventory, "id" | "createdAt" | "updatedAt">>) =>
+    api.patch<Inventory>(`/inventory/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/inventory/${id}`),
+};
+
+// ============================================================================
+// Shipments API
+// ============================================================================
+
+export const shipmentsApi = {
+  getAll: (params?: { page?: number; limit?: number }) =>
+    api.get<Shipment[]>("/shipments", { params }),
 
   getById: (id: string) =>
     api.get<Shipment>(`/shipments/${id}`),
@@ -185,17 +335,21 @@ export const shipmentApi = {
     trackingId: string;
     fromLocationId: string;
     toLocationId: string;
-    status?: string;
+    status?: ShipmentStatus;
     userId?: string;
     notes?: string;
   }) =>
     api.post<Shipment>("/shipments", data),
 
-  update: (id: string, data: Partial<Shipment>) =>
+  update: (id: string, data: Partial<Omit<Shipment, "id" | "createdAt" | "updatedAt">>) =>
     api.patch<Shipment>(`/shipments/${id}`, data),
 
   delete: (id: string) =>
     api.delete<void>(`/shipments/${id}`),
-}
+};
+
+// ============================================================================
+// Default Export
+// ============================================================================
 
 export default api;
