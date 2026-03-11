@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
+import { Toaster } from "@/components/ui/toaster";
 
 /**
  * Main Layout (Dashboard)
@@ -21,6 +22,7 @@ export default function MainLayout({
           {children}
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, AlertCircle, Calendar, RefreshCw } from "lucide-react";
+import { Search, AlertCircle, Calendar, RefreshCw, Plus, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -19,10 +19,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useInventory } from "@/hooks/use-api-data";
 import { TableLoading, TableError, TableEmpty } from "@/components/shared/table-states";
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Stock status indicator with colored dot
@@ -72,7 +82,105 @@ export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
 
+  // Receive modal state
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+  const [receiveFormData, setReceiveFormData] = useState({
+    productId: "",
+    productName: "",
+    locationId: "",
+    locationName: "",
+    batch: "",
+    quantity: 1,
+    supplierId: "",
+    supplierName: "",
+    notes: "",
+  });
+  const [receiveFormErrors, setReceiveFormErrors] = useState<Partial<Record<keyof typeof receiveFormData, string>>>({});
+
   const { data: inventory = [], isLoading, error, refetch } = useInventory();
+
+  // Mock product options for receive modal
+  const MOCK_PRODUCTS = [
+    { id: "prod-1", name: "Wireless Mouse", sku: "WM-001" },
+    { id: "prod-2", name: "USB-C Cable", sku: "USB-002" },
+    { id: "prod-3", name: "Keyboard", sku: "KB-003" },
+    { id: "prod-4", name: "Monitor Stand", sku: "MS-004" },
+    { id: "prod-5", name: "Laptop Sleeve", sku: "LS-005" },
+    { id: "prod-6", name: "Webcam HD", sku: "WC-006" },
+  ];
+
+  // Mock location options for receive modal
+  const MOCK_LOCATIONS = [
+    { id: "loc-1", name: "Warehouse 1" },
+    { id: "loc-2", name: "Store A" },
+    { id: "loc-3", name: "Store B" },
+    { id: "loc-4", name: "Warehouse 2" },
+  ];
+
+  // Mock supplier options for receive modal
+  const MOCK_SUPPLIERS = [
+    { id: "sup-1", name: "Acme Corporation" },
+    { id: "sup-2", name: "Global Parts Distributors" },
+    { id: "sup-3", name: "TechSupply Co." },
+  ];
+
+  /**
+   * Reset receive form to empty state
+   */
+  function resetReceiveForm() {
+    setReceiveFormData({
+      productId: "",
+      productName: "",
+      locationId: "",
+      locationName: "",
+      batch: "",
+      quantity: 1,
+      supplierId: "",
+      supplierName: "",
+      notes: "",
+    });
+    setReceiveFormErrors({});
+  }
+
+  /**
+   * Handle input change for receive form
+   */
+  function handleReceiveInputChange(field: keyof typeof receiveFormData, value: string | number) {
+    setReceiveFormData((prev) => ({ ...prev, [field]: value }));
+    if (receiveFormErrors[field]) {
+      setReceiveFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  }
+
+  /**
+   * Validate receive form
+   */
+  function validateReceiveForm(): boolean {
+    const errors: Partial<Record<keyof typeof receiveFormData, string>> = {};
+
+    if (!receiveFormData.productId) errors.productId = "Product is required";
+    if (!receiveFormData.locationId) errors.locationId = "Location is required";
+    if (receiveFormData.quantity <= 0) errors.quantity = "Quantity must be greater than 0";
+
+    setReceiveFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  /**
+   * Handle receive inventory (mock)
+   */
+  function handleReceive(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validateReceiveForm()) return;
+
+    toast({
+      title: "Stock received",
+      description: `Successfully received ${receiveFormData.quantity} units of ${receiveFormData.productName} at ${receiveFormData.locationName}.`,
+    });
+
+    setIsReceiveModalOpen(false);
+    resetReceiveForm();
+  }
 
   // Filter inventory based on search and location
   const filteredInventory = inventory.filter((item) => {
@@ -117,6 +225,17 @@ export default function InventoryPage() {
           </p>
         </div>
         <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg"
+            onClick={() => {
+              resetReceiveForm();
+              setIsReceiveModalOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Receive Stock
+          </Button>
           <Button
             variant="outline"
             className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg"
@@ -253,6 +372,133 @@ export default function InventoryPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Receive Stock Modal */}
+      <Dialog open={isReceiveModalOpen} onOpenChange={setIsReceiveModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Receive Stock</DialogTitle>
+            <DialogDescription>
+              Record incoming stock into inventory.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleReceive}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="receive-product">Product *</Label>
+                <Select
+                  value={receiveFormData.productId}
+                  onValueChange={(v) => {
+                    handleReceiveInputChange("productId", v);
+                    const product = MOCK_PRODUCTS.find((p) => p.id === v);
+                    if (product) handleReceiveInputChange("productName", product.name);
+                  }}
+                >
+                  <SelectTrigger id="receive-product" className={receiveFormErrors.productId ? "border-red-500" : ""}>
+                    <SelectValue placeholder="Select product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOCK_PRODUCTS.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name} ({product.sku})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {receiveFormErrors.productId && <p className="text-xs text-red-500">{receiveFormErrors.productId}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="receive-location">Location *</Label>
+                  <Select
+                    value={receiveFormData.locationId}
+                    onValueChange={(v) => {
+                      handleReceiveInputChange("locationId", v);
+                      const location = MOCK_LOCATIONS.find((l) => l.id === v);
+                      if (location) handleReceiveInputChange("locationName", location.name);
+                    }}
+                  >
+                    <SelectTrigger id="receive-location" className={receiveFormErrors.locationId ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MOCK_LOCATIONS.map((location) => (
+                        <SelectItem key={location.id} value={location.id}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {receiveFormErrors.locationId && <p className="text-xs text-red-500">{receiveFormErrors.locationId}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receive-quantity">Quantity *</Label>
+                  <Input
+                    id="receive-quantity"
+                    type="number"
+                    min="1"
+                    value={receiveFormData.quantity}
+                    onChange={(e) => handleReceiveInputChange("quantity", parseInt(e.target.value) || 0)}
+                    className={receiveFormErrors.quantity ? "border-red-500" : ""}
+                  />
+                  {receiveFormErrors.quantity && <p className="text-xs text-red-500">{receiveFormErrors.quantity}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="receive-batch">Batch Number</Label>
+                  <Input
+                    id="receive-batch"
+                    value={receiveFormData.batch}
+                    onChange={(e) => handleReceiveInputChange("batch", e.target.value)}
+                    placeholder="e.g. BATCH-2024-001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receive-supplier">Supplier (Optional)</Label>
+                  <Select
+                    value={receiveFormData.supplierId}
+                    onValueChange={(v) => {
+                      handleReceiveInputChange("supplierId", v);
+                      const supplier = MOCK_SUPPLIERS.find((s) => s.id === v);
+                      if (supplier) handleReceiveInputChange("supplierName", supplier.name);
+                    }}
+                  >
+                    <SelectTrigger id="receive-supplier">
+                      <SelectValue placeholder="Select supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MOCK_SUPPLIERS.map((supplier) => (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="receive-notes">Notes</Label>
+                <Input
+                  id="receive-notes"
+                  value={receiveFormData.notes}
+                  onChange={(e) => handleReceiveInputChange("notes", e.target.value)}
+                  placeholder="Optional notes about this receipt"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsReceiveModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Receive Stock</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

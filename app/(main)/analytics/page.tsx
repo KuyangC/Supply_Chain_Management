@@ -1,5 +1,7 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { Download, Calendar } from "lucide-react";
+import { Download, Calendar, RefreshCw, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -17,79 +19,134 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useProducts, useShipments, useInventory } from "@/hooks/use-api-data";
+import { TableError, TableLoading } from "@/components/shared/table-states";
+import { useMemo, useState } from "react";
+import { formatCurrency } from "@/lib/utils";
 
 /**
  * Analytics & Reports Page
  *
  * Displays analytics with charts and export options
+ * Updated to use real API data
  */
 export default function AnalyticsPage() {
-  // Mock data - replace with actual API calls
-  const summaryData = [
-    {
-      title: "Inventory Value",
-      value: "$125,000",
-      trend: { value: "+8%", direction: "up" as const },
-    },
-    {
-      title: "Total Shipments",
-      value: 500,
-      trend: { value: "+12%", direction: "up" as const },
-    },
-    {
-      title: "Completion Rate",
-      value: "94.5%",
-      trend: { value: "+2%", direction: "up" as const },
-    },
-    {
-      title: "Avg. Delivery Time",
-      value: "2.5 days",
-      trend: { value: "-0.5 days", direction: "down" as const },
-    },
-  ];
+  const [dateRange, setDateRange] = useState("30d");
 
-  const inventoryReport = [
-    {
-      product: "Wireless Mouse",
-      category: "Electronics",
-      stock: 150,
-      value: "$2,250",
-      lowStock: false,
-      expiring: false,
-    },
-    {
-      product: "USB Cable",
-      category: "Electronics",
-      stock: 5,
-      value: "$50",
-      lowStock: true,
-      expiring: false,
-    },
-    {
-      product: "Keyboard",
-      category: "Electronics",
-      stock: 75,
-      value: "$3,750",
-      lowStock: false,
-      expiring: false,
-    },
-    {
-      product: "Monitor Stand",
-      category: "Accessories",
-      stock: 0,
-      value: "$0",
-      lowStock: true,
-      expiring: false,
-    },
-    {
-      product: "Webcam HD",
-      category: "Electronics",
-      stock: 25,
-      value: "$1,250",
-      lowStock: false,
-      expiring: false,
-    },
-  ];
+  const { data: products = [], isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
+  const { data: shipments = [], isLoading: shipmentsLoading, error: shipmentsError, refetch: refetchShipments } = useShipments();
+  const { data: inventory = [], isLoading: inventoryLoading, error: inventoryError, refetch: refetchInventory } = useInventory();
+
+  /**
+   * Calculate summary data from real API data
+   */
+  const summaryData = useMemo(() => {
+    // Calculate inventory value (assuming $15 average value per item for demo)
+    const totalInventoryValue = inventory.reduce((sum, item) => sum + (item.qty * 15), 0);
+
+    const totalShipments = shipments.length;
+    const deliveredShipments = shipments.filter((s) => s.status === "DELIVERED").length;
+    const completionRate = totalShipments > 0 ? (deliveredShipments / totalShipments) * 100 : 0;
+
+    // Calculate average delivery time (mock calculation for now)
+    const avgDeliveryTime = "2.5 days";
+
+    // Calculate trends (comparing to previous period - simplified for now)
+    const inventoryTrend = "+8%";
+    const shipmentsTrend = "+12%";
+    const completionTrend = "+2%";
+
+    return [
+      {
+        title: "Inventory Value",
+        value: formatCurrency(totalInventoryValue),
+        trend: { value: inventoryTrend, direction: "up" as const },
+      },
+      {
+        title: "Total Shipments",
+        value: totalShipments,
+        trend: { value: shipmentsTrend, direction: "up" as const },
+      },
+      {
+        title: "Completion Rate",
+        value: `${completionRate.toFixed(1)}%`,
+        trend: { value: completionTrend, direction: "up" as const },
+      },
+      {
+        title: "Avg. Delivery Time",
+        value: avgDeliveryTime,
+        trend: { value: "-0.5 days", direction: "down" as const },
+      },
+    ];
+  }, [products, shipments, inventory]);
+
+  /**
+   * Generate inventory report from real data
+   */
+  const inventoryReport = useMemo(() => {
+    return products.map((product) => ({
+      id: product.id,
+      product: product.name,
+      category: product.category,
+      stock: product.stock,
+      value: formatCurrency(product.stock * 15), // Assuming $15 average value
+      lowStock: product.stock < product.minStock,
+      expiring: false, // Expiry data not available in product model
+    }));
+  }, [products]);
+
+  /**
+   * Get shipment status distribution for chart
+   */
+  const shipmentStatusDistribution = useMemo(() => {
+    const distribution = {
+      pending: shipments.filter((s) => s.status === "PENDING").length,
+      confirmed: shipments.filter((s) => s.status === "CONFIRMED").length,
+      pickedUp: shipments.filter((s) => s.status === "PICKED_UP").length,
+      inTransit: shipments.filter((s) => s.status === "IN_TRANSIT").length,
+      delivered: shipments.filter((s) => s.status === "DELIVERED").length,
+      failed: shipments.filter((s) => s.status === "FAILED").length,
+      cancelled: shipments.filter((s) => s.status === "CANCELLED").length,
+    };
+    return distribution;
+  }, [shipments]);
+
+  /**
+   * Get inventory by category for chart
+   */
+  const inventoryByCategory = useMemo(() => {
+    const categoryMap = new Map<string, number>();
+
+    products.forEach((product) => {
+      const current = categoryMap.get(product.category) || 0;
+      categoryMap.set(product.category, current + product.stock);
+    });
+
+    return Array.from(categoryMap.entries()).map(([category, stock]) => ({
+      category,
+      stock,
+    }));
+  }, [products]);
+
+  /**
+   * Refresh all data
+   */
+  function handleRefresh() {
+    refetchProducts();
+    refetchShipments();
+    refetchInventory();
+  }
+
+  /**
+   * Handle export (placeholder)
+   */
+  function handleExport() {
+    // TODO: Implement export functionality
+    console.log("Export clicked");
+  }
+
+  const isLoading = productsLoading || shipmentsLoading || inventoryLoading;
+  const hasError = productsError || shipmentsError || inventoryError;
 
   return (
     <div className="space-y-6">
@@ -102,7 +159,7 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select defaultValue="30d">
+          <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-[180px]">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Date Range" />
@@ -115,9 +172,12 @@ export default function AnalyticsPage() {
               <SelectItem value="lastMonth">Last Month</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Export
+          </Button>
+          <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
@@ -136,25 +196,105 @@ export default function AnalyticsPage() {
 
       {/* Charts Section */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Inventory by Category Chart Placeholder */}
+        {/* Inventory by Category Chart */}
         <div className="rounded-xl border bg-card p-6">
           <h3 className="text-lg font-semibold">Inventory by Category</h3>
           <p className="text-sm text-muted-foreground">
             Distribution of inventory across categories
           </p>
-          <div className="mt-4 h-64 flex items-center justify-center border-2 border-dashed rounded-lg">
-            <span className="text-muted-foreground">Pie Chart Placeholder</span>
+          <div className="mt-6">
+            {productsLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : inventoryByCategory.length === 0 ? (
+              <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-lg">
+                <span className="text-muted-foreground">No inventory data available</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {inventoryByCategory.map((item) => {
+                  const maxStock = Math.max(...inventoryByCategory.map((i) => i.stock));
+                  const percentage = (item.stock / maxStock) * 100;
+                  return (
+                    <div key={item.category} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{item.category}</span>
+                        <span className="text-muted-foreground">{item.stock} units</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Shipment Trends Chart Placeholder */}
+        {/* Shipment Status Distribution */}
         <div className="rounded-xl border bg-card p-6">
-          <h3 className="text-lg font-semibold">Shipment Trends</h3>
+          <h3 className="text-lg font-semibold">Shipment Status</h3>
           <p className="text-sm text-muted-foreground">
-            Shipment volume over time
+            Current shipment distribution
           </p>
-          <div className="mt-4 h-64 flex items-center justify-center border-2 border-dashed rounded-lg">
-            <span className="text-muted-foreground">Line Chart Placeholder</span>
+          <div className="mt-6">
+            {shipmentsLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : shipments.length === 0 ? (
+              <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-lg">
+                <span className="text-muted-foreground">No shipment data available</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(shipmentStatusDistribution).map(([status, count]) => {
+                  if (count === 0) return null;
+                  const maxCount = Math.max(...Object.values(shipmentStatusDistribution));
+                  const percentage = (count / maxCount) * 100;
+
+                  const statusColors: Record<string, string> = {
+                    pending: "bg-gray-500",
+                    confirmed: "bg-blue-500",
+                    pickedUp: "bg-amber-500",
+                    inTransit: "bg-indigo-500",
+                    delivered: "bg-green-500",
+                    failed: "bg-red-500",
+                    cancelled: "bg-red-400",
+                  };
+
+                  const statusLabels: Record<string, string> = {
+                    pending: "Pending",
+                    confirmed: "Confirmed",
+                    pickedUp: "Picked Up",
+                    inTransit: "In Transit",
+                    delivered: "Delivered",
+                    failed: "Failed",
+                    cancelled: "Cancelled",
+                  };
+
+                  return (
+                    <div key={status} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium capitalize">{statusLabels[status] || status}</span>
+                        <span className="text-muted-foreground">{count} shipments</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${statusColors[status] || "bg-gray-500"} rounded-full transition-all`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -178,32 +318,40 @@ export default function AnalyticsPage() {
                 <TableHead>Stock</TableHead>
                 <TableHead>Value</TableHead>
                 <TableHead>Low Stock</TableHead>
-                <TableHead>Expiring</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventoryReport.map((item) => (
-                <TableRow key={item.product}>
-                  <TableCell className="font-medium">{item.product}</TableCell>
-                  <TableCell>{item.category}</TableCell>
-                  <TableCell>{item.stock}</TableCell>
-                  <TableCell>{item.value}</TableCell>
-                  <TableCell>
-                    {item.lowStock ? (
-                      <Badge variant="destructive">Yes</Badge>
-                    ) : (
-                      <Badge variant="outline">No</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {item.expiring ? (
-                      <Badge variant="destructive">Yes</Badge>
-                    ) : (
-                      <Badge variant="outline">No</Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {productsLoading ? (
+                <TableLoading colSpan={5} />
+              ) : hasError ? (
+                <TableError
+                  colSpan={5}
+                  message="Failed to load inventory data"
+                  onRetry={handleRefresh}
+                />
+              ) : inventoryReport.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="h-32 text-center text-muted-foreground">
+                    No inventory data found
+                  </td>
+                </tr>
+              ) : (
+                inventoryReport.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.product}</TableCell>
+                    <TableCell>{item.category}</TableCell>
+                    <TableCell>{item.stock}</TableCell>
+                    <TableCell>{item.value}</TableCell>
+                    <TableCell>
+                      {item.lowStock ? (
+                        <Badge variant="destructive">Yes</Badge>
+                      ) : (
+                        <Badge variant="outline">No</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

@@ -14,6 +14,9 @@ import {
   ScrollText,
   Settings,
   LogOut,
+  Building,
+  ArrowRight,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -28,6 +31,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Package,
   Warehouse,
   Truck,
+  Building,
+  ArrowRight,
+  RotateCcw,
   Users,
   BarChart3,
   ScrollText,
