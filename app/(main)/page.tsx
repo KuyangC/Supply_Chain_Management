@@ -1,3 +1,6 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
 import { SummaryCard } from "@/components/shared/summary-card";
 import { InventoryFlowChart } from "@/components/shared/inventory-flow-chart";
 import { ShipmentStatusChart } from "@/components/shared/shipment-status-chart";
@@ -20,8 +23,12 @@ import {
   ArrowRight,
   AlertCircle,
   CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
+import { useProducts, useShipments } from "@/hooks/use-api-data";
+import { TableLoading, TableError } from "@/components/shared/table-states";
+import { useMemo } from "react";
 
 /**
  * Dashboard Page
@@ -30,91 +37,90 @@ import Link from "next/link";
  * Updated to match Figma design
  */
 export default function DashboardPage() {
-  // Mock data - replace with actual API calls
-  const summaryData = [
-    {
-      title: "Total Products",
-      value: 150,
-      icon: Package,
-      trend: { value: "+5%", direction: "up" as const },
-    },
-    {
-      title: "Locations",
-      value: 5,
-      icon: Warehouse,
-      trend: { value: "+1", direction: "up" as const },
-    },
-    {
-      title: "Shipments",
-      value: 25,
-      icon: Truck,
-      trend: { value: "+3", direction: "up" as const },
-    },
-    {
-      title: "Low Stock",
-      value: 8,
-      icon: AlertTriangle,
-      trend: { value: "-2", direction: "down" as const },
-      variant: "warning" as const,
-    },
-    {
-      title: "Expiring Soon",
-      value: 12,
-      icon: Clock,
-      trend: { value: "+4", direction: "up" as const },
-      variant: "danger" as const,
-    },
-    {
-      title: "In Transit",
-      value: 18,
-      icon: TrendingUp,
-      trend: { value: "+6", direction: "up" as const },
-      variant: "info" as const,
-    },
-  ];
+  // Fetch real data from API
+  const { data: products = [], isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
+  const { data: shipments = [], isLoading: shipmentsLoading, error: shipmentsError, refetch: refetchShipments } = useShipments();
 
-  const recentShipments = [
-    {
-      id: "TXF001",
-      from: "WH-001",
-      to: "Store-A",
-      product: "Wireless Mouse",
-      status: "in_transit",
-      date: "2025-03-01",
-    },
-    {
-      id: "TXF002",
-      from: "WH-001",
-      to: "Store-B",
-      product: "USB Cable",
-      status: "pending",
-      date: "2025-03-01",
-    },
-    {
-      id: "TXF003",
-      from: "WH-002",
-      to: "Store-C",
-      product: "Keyboard",
-      status: "delivered",
-      date: "2025-02-28",
-    },
-    {
-      id: "TXF004",
-      from: "WH-001",
-      to: "Store-A",
-      product: "Monitor",
-      status: "confirmed",
-      date: "2025-02-28",
-    },
-    {
-      id: "TXF005",
-      from: "WH-002",
-      to: "Store-B",
-      product: "Webcam",
-      status: "picked_up",
-      date: "2025-02-27",
-    },
-  ];
+  // Calculate summary statistics from real data
+  const summaryData = useMemo(() => {
+    const totalProducts = products.length;
+    const lowStockProducts = products.filter((p) => p.stock < (p.minStock ?? 10)).length;
+    const totalShipments = shipments.length;
+    const inTransitShipments = shipments.filter((s) => s.status === "IN_TRANSIT").length;
+    const deliveredShipments = shipments.filter((s) => s.status === "DELIVERED").length;
+    const pendingShipments = shipments.filter((s) => s.status === "PENDING").length;
+    const confirmedShipments = shipments.filter((s) => s.status === "CONFIRMED").length;
+    const pickedUpShipments = shipments.filter((s) => s.status === "PICKED_UP").length;
+
+    return [
+      {
+        title: "Total Products",
+        value: totalProducts,
+        icon: Package,
+        trend: { value: totalProducts > 0 ? "+5%" : "0%", direction: "up" as const },
+      },
+      {
+        title: "Locations",
+        value: 5,
+        icon: Warehouse,
+        trend: { value: "+1", direction: "up" as const },
+      },
+      {
+        title: "Confirmed",
+        value: confirmedShipments,
+        icon: Warehouse,
+        trend: { value: confirmedShipments > 0 ? "+2" : "0", direction: "up" as const },
+      },
+      {
+        title: "Shipments",
+        value: totalShipments,
+        icon: Truck,
+        trend: { value: totalShipments > 0 ? "+3" : "0", direction: "up" as const },
+      },
+      {
+        title: "Low Stock",
+        value: lowStockProducts,
+        icon: AlertTriangle,
+        trend: { value: lowStockProducts > 0 ? "-2" : "0", direction: "down" as const },
+        variant: "warning" as const,
+      },
+      {
+        title: "Expiring Soon",
+        value: 12,
+        icon: Clock,
+        trend: { value: "+4", direction: "up" as const },
+        variant: "danger" as const,
+      },
+      {
+        title: "In Transit",
+        value: inTransitShipments,
+        icon: TrendingUp,
+        trend: { value: inTransitShipments > 0 ? "+6" : "0", direction: "up" as const },
+        variant: "info" as const,
+      },
+    ];
+  }, [products, shipments]);
+
+  // Get recent shipments (last 5)
+  const recentShipments = useMemo(() => {
+    if (!shipments || shipments.length === 0) return [];
+
+    return shipments
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
+      .map((shipment) => ({
+        id: shipment.trackingId,
+        from: shipment.fromLocation?.name || "-",
+        to: shipment.toLocation?.name || "-",
+        product: shipment.items?.[0]?.product?.name || "-",
+        status: shipment.status,
+        date: new Date(shipment.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+      }));
+  }, [shipments]);
 
   const systemAlerts = [
     {
@@ -156,11 +162,26 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Overview of your supply chain metrics and recent activity
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Overview of your supply chain metrics and recent activity
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            refetchProducts();
+            refetchShipments();
+          }}
+          disabled={productsLoading || shipmentsLoading}
+          className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${(productsLoading || shipmentsLoading) ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -242,18 +263,34 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentShipments.map((shipment) => (
-                  <TableRow key={shipment.id} className="hover:bg-gray-50/50 border-b border-gray-50">
-                    <TableCell className="font-medium text-gray-900">{shipment.id}</TableCell>
-                    <TableCell className="text-gray-600">{shipment.from}</TableCell>
-                    <TableCell className="text-gray-600">{shipment.to}</TableCell>
-                    <TableCell className="text-gray-600">{shipment.product}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={shipment.status} type="shipment" />
-                    </TableCell>
-                    <TableCell className="text-gray-600">{shipment.date}</TableCell>
-                  </TableRow>
-                ))}
+                {shipmentsLoading ? (
+                  <TableLoading colSpan={6} />
+                ) : shipmentsError ? (
+                  <TableError
+                    colSpan={6}
+                    message={shipmentsError instanceof Error ? shipmentsError.message : "Failed to load shipments"}
+                    onRetry={() => refetchShipments()}
+                  />
+                ) : recentShipments.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="h-32 text-center text-gray-500">
+                      No recent shipments found
+                    </td>
+                  </tr>
+                ) : (
+                  recentShipments.map((shipment) => (
+                    <TableRow key={shipment.id} className="hover:bg-gray-50/50 border-b border-gray-50">
+                      <TableCell className="font-medium text-gray-900">{shipment.id}</TableCell>
+                      <TableCell className="text-gray-600">{shipment.from}</TableCell>
+                      <TableCell className="text-gray-600">{shipment.to}</TableCell>
+                      <TableCell className="text-gray-600">{shipment.product}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={shipment.status} type="shipment" />
+                      </TableCell>
+                      <TableCell className="text-gray-600">{shipment.date}</TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

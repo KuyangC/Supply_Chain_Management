@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { PasswordInput } from "@/components/auth/password-input";
 import { AlertCircle } from "lucide-react";
+import { authApi, ApiError } from "@/lib/api";
 
 type FormData = {
   email: string;
@@ -31,8 +32,8 @@ type FormErrors = {
 /**
  * Login Page
  *
- * Simple dummy authentication for frontend testing.
- * Any non-empty email/password combination works.
+ * Authenticates users via backend API.
+ * Stores JWT token in cookie and localStorage for session management.
  */
 export default function LoginPage() {
   const router = useRouter();
@@ -70,25 +71,28 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const response = await authApi.login(formData.email, formData.password);
 
-      // Any email/password works - just set auth cookie and redirect
-      document.cookie = `auth_token=dummy_token; path=/; max-age=86400; SameSite=lax`;
+      document.cookie = `auth_token=${response.access_token}; path=/; max-age=86400; SameSite=lax`;
 
       if (typeof window !== "undefined") {
-        localStorage.setItem("auth_token", "dummy_token");
-        localStorage.setItem("user", JSON.stringify({
-          email: formData.email,
-          name: "User",
-          role: "user"
-        }));
+        localStorage.setItem("auth_token", response.access_token);
+        localStorage.setItem("user", JSON.stringify(response.user));
       }
 
       router.push("/");
     } catch (error) {
       console.error("Login error:", error);
-      setErrors({ general: "An unexpected error occurred. Please try again." });
+
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          setErrors({ general: "Invalid email or password" });
+        } else {
+          setErrors({ general: error.message || "Login failed" });
+        }
+      } else {
+        setErrors({ general: "An unexpected error occurred" });
+      }
     } finally {
       setIsLoading(false);
     }

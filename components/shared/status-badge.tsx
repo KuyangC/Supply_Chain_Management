@@ -47,13 +47,25 @@ export interface StatusBadgeProps {
 }
 
 /**
+ * Normalize status to lowercase for configuration lookup
+ * Backend returns uppercase statuses (PENDING, IN_TRANSIT, etc.)
+ * Configuration uses lowercase keys
+ */
+function normalizeStatus(status: string): string {
+  return status.toLowerCase().replace(/ /g, "_");
+}
+
+/**
  * Get the status configuration based on type and status value
+ * Handles both uppercase (from backend) and lowercase status values
  */
 function getStatusConfig(type: StatusType, status: string): StatusConfig {
+  const normalizedStatus = normalizeStatus(status);
+
   switch (type) {
     case "shipment":
       return (
-        SHIPMENT_STATUS_CONFIG[status as keyof typeof SHIPMENT_STATUS_CONFIG] ||
+        SHIPMENT_STATUS_CONFIG[normalizedStatus as keyof typeof SHIPMENT_STATUS_CONFIG] ||
         {
           label: status,
           color: "gray",
@@ -63,7 +75,7 @@ function getStatusConfig(type: StatusType, status: string): StatusConfig {
       );
     case "product":
       return (
-        PRODUCT_STATUS_CONFIG[status as keyof typeof PRODUCT_STATUS_CONFIG] ||
+        PRODUCT_STATUS_CONFIG[normalizedStatus as keyof typeof PRODUCT_STATUS_CONFIG] ||
         {
           label: status,
           color: "gray",
@@ -73,7 +85,7 @@ function getStatusConfig(type: StatusType, status: string): StatusConfig {
       );
     case "user":
       return (
-        USER_STATUS_CONFIG[status as keyof typeof USER_STATUS_CONFIG] || {
+        USER_STATUS_CONFIG[normalizedStatus as keyof typeof USER_STATUS_CONFIG] || {
           label: status,
           color: "gray",
           bgColor: "bg-gray-100",
