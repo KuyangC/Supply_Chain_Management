@@ -57,7 +57,7 @@ function CustomTooltip({ active, payload }: any) {
         <p className="text-sm font-medium text-gray-900">{payload[0].payload.month}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {entry.value.toLocaleString()}
+            {entry.name}: {entry.value.toLocaleString("en-US")}
           </p>
         ))}
       </div>

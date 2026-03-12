@@ -4,17 +4,15 @@
 
 /**
  * Navigation menu items
+ *
+ * @deprecated This is being replaced by location-based navigation (NAV_ITEMS_BY_LOCATION).
+ * Kept for backward compatibility during migration.
  */
 export const NAV_ITEMS = [
   {
     title: "Dashboard",
     href: "/",
     icon: "LayoutDashboard",
-  },
-  {
-    title: "Products",
-    href: "/products",
-    icon: "Package",
   },
   {
     title: "Inventory",
@@ -27,16 +25,6 @@ export const NAV_ITEMS = [
     icon: "Truck",
   },
   {
-    title: "Users",
-    href: "/users",
-    icon: "Users",
-  },
-  {
-    title: "Analytics",
-    href: "/analytics",
-    icon: "BarChart3",
-  },
-  {
     title: "Event Logs",
     href: "/event-logs",
     icon: "ScrollText",
@@ -44,13 +32,18 @@ export const NAV_ITEMS = [
 ] as const;
 
 /**
- * System menu items (Settings, Logout)
+ * System menu items (Settings, Users, Logout)
  */
 export const SYSTEM_ITEMS = [
   {
     title: "Settings",
     href: "/settings",
     icon: "Settings",
+  },
+  {
+    title: "Users",
+    href: "/users",
+    icon: "Users",
   },
   {
     title: "Logout",
@@ -259,3 +252,241 @@ export const EXPORT_FORMATS = [
   { value: "xlsx", label: "Excel", icon: "sheet" },
   { value: "csv", label: "CSV", icon: "table" },
 ] as const;
+
+/**
+ * Supplier status configuration
+ */
+export const SUPPLIER_STATUS_CONFIG = {
+  active: {
+    label: "Active",
+    color: "green" as const,
+    bgColor: "bg-green-100",
+    textColor: "text-green-700",
+  },
+  inactive: {
+    label: "Inactive",
+    color: "gray" as const,
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-700",
+  },
+  pending: {
+    label: "Pending",
+    color: "gray" as const,
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-700",
+  },
+  blocked: {
+    label: "Blocked",
+    color: "red" as const,
+    bgColor: "bg-red-100",
+    textColor: "text-red-700",
+  },
+} as const;
+
+/**
+ * Stock transfer status configuration
+ */
+export const TRANSFER_STATUS_CONFIG = {
+  pending: {
+    label: "Pending",
+    color: "gray" as const,
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-700",
+  },
+  in_transit: {
+    label: "In Transit",
+    color: "blue" as const,
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-700",
+  },
+  completed: {
+    label: "Completed",
+    color: "green" as const,
+    bgColor: "bg-green-100",
+    textColor: "text-green-700",
+  },
+  cancelled: {
+    label: "Cancelled",
+    color: "red" as const,
+    bgColor: "bg-red-100",
+    textColor: "text-red-700",
+  },
+  failed: {
+    label: "Failed",
+    color: "red" as const,
+    bgColor: "bg-red-100",
+    textColor: "text-red-700",
+  },
+} as const;
+
+/**
+ * Return status configuration
+ */
+export const RETURN_STATUS_CONFIG = {
+  pending: {
+    label: "Pending",
+    color: "gray" as const,
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-700",
+  },
+  approved: {
+    label: "Approved",
+    color: "blue" as const,
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-700",
+  },
+  rejected: {
+    label: "Rejected",
+    color: "red" as const,
+    bgColor: "bg-red-100",
+    textColor: "text-red-700",
+  },
+  completed: {
+    label: "Completed",
+    color: "green" as const,
+    bgColor: "bg-green-100",
+    textColor: "text-green-700",
+  },
+  refunded: {
+    label: "Refunded",
+    color: "green" as const,
+    bgColor: "bg-green-100",
+    textColor: "text-green-700",
+  },
+} as const;
+
+/**
+ * Location type configuration
+ */
+export const LOCATION_TYPE_CONFIG = {
+  supplier: {
+    label: "Supplier",
+    color: "purple" as const,
+    bgColor: "bg-purple-100",
+    textColor: "text-purple-700",
+    icon: "Building",
+  },
+  manufacturer: {
+    label: "Manufaktur",
+    color: "blue" as const,
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-700",
+    icon: "Factory",
+  },
+  warehouse: {
+    label: "Warehouse",
+    color: "orange" as const,
+    bgColor: "bg-orange-100",
+    textColor: "text-orange-700",
+    icon: "Warehouse",
+  },
+  distributor: {
+    label: "Distributor",
+    color: "cyan" as const,
+    bgColor: "bg-cyan-100",
+    textColor: "text-cyan-700",
+    icon: "Truck",
+  },
+  retail: {
+    label: "Retail",
+    color: "green" as const,
+    bgColor: "bg-green-100",
+    textColor: "text-green-700",
+    icon: "Store",
+  },
+} as const;
+
+/**
+ * Product type configuration
+ */
+export const PRODUCT_TYPE_CONFIG = {
+  raw: {
+    label: "Raw Material",
+    color: "amber" as const,
+    bgColor: "bg-amber-100",
+    textColor: "text-amber-700",
+  },
+  finished: {
+    label: "Finished Goods",
+    color: "green" as const,
+    bgColor: "bg-green-100",
+    textColor: "text-green-700",
+  },
+} as const;
+
+/**
+ * Production batch status configuration
+ */
+export const PRODUCTION_BATCH_STATUS_CONFIG = {
+  raw_material: {
+    label: "Raw Material",
+    color: "amber" as const,
+    bgColor: "bg-amber-100",
+    textColor: "text-amber-700",
+  },
+  in_production: {
+    label: "In Production",
+    color: "blue" as const,
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-700",
+  },
+  finished: {
+    label: "Finished",
+    color: "green" as const,
+    bgColor: "bg-green-100",
+    textColor: "text-green-700",
+  },
+  packed: {
+    label: "Packed",
+    color: "purple" as const,
+    bgColor: "bg-purple-100",
+    textColor: "text-purple-700",
+  },
+  shipped: {
+    label: "Shipped",
+    color: "gray" as const,
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-700",
+  },
+} as const;
+
+/**
+ * Navigation menu items by location type
+ */
+export const NAV_ITEMS_BY_LOCATION = {
+  supplier: [
+    { title: "Dashboard", href: "/", icon: "LayoutDashboard" },
+    { title: "Stock", href: "/inventory", icon: "Package" },
+    { title: "Shipments", href: "/shipments", icon: "Truck" },
+    { title: "Search", href: "/search", icon: "Search" },
+    { title: "Logs", href: "/event-logs", icon: "ScrollText" },
+  ] as const,
+  manufacturer: [
+    { title: "Dashboard", href: "/", icon: "LayoutDashboard" },
+    { title: "Stock", href: "/inventory", icon: "Package" },
+    { title: "Production", href: "/production", icon: "Factory" },
+    { title: "Shipments", href: "/shipments", icon: "Truck" },
+    { title: "Search", href: "/search", icon: "Search" },
+    { title: "Logs", href: "/event-logs", icon: "ScrollText" },
+  ] as const,
+  warehouse: [
+    { title: "Dashboard", href: "/", icon: "LayoutDashboard" },
+    { title: "Stock", href: "/inventory", icon: "Package" },
+    { title: "Shipments", href: "/shipments", icon: "Truck" },
+    { title: "Search", href: "/search", icon: "Search" },
+    { title: "Logs", href: "/event-logs", icon: "ScrollText" },
+  ] as const,
+  distributor: [
+    { title: "Dashboard", href: "/", icon: "LayoutDashboard" },
+    { title: "Stock", href: "/inventory", icon: "Package" },
+    { title: "Shipments", href: "/shipments", icon: "Truck" },
+    { title: "Search", href: "/search", icon: "Search" },
+    { title: "Logs", href: "/event-logs", icon: "ScrollText" },
+  ] as const,
+  retail: [
+    { title: "Dashboard", href: "/", icon: "LayoutDashboard" },
+    { title: "Stock", href: "/inventory", icon: "Package" },
+    { title: "Search", href: "/search", icon: "Search" },
+    { title: "Logs", href: "/event-logs", icon: "ScrollText" },
+  ] as const,
+} as const;

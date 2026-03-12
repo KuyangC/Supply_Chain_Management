@@ -98,8 +98,8 @@ export function SummaryCard({
             <p className="text-sm font-medium text-gray-500">
               {title}
             </p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">
-              {typeof value === "number" ? value.toLocaleString() : value}
+            <p className="mt-2 text-2xl font-bold text-gray-900" suppressHydrationWarning>
+              {typeof value === "number" ? value.toLocaleString("en-US") : value}
             </p>
             {trend && (
               <p className={cn("mt-2 flex items-center text-sm font-medium", trendStyles[trend.direction])}>

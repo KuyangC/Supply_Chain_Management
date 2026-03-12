@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Filter, RefreshCw } from "lucide-react";
+import { Plus, Search, Filter, RefreshCw, Trash2, MoreVertical, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -20,20 +20,144 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useShipments } from "@/hooks/use-api-data";
+import { useShipments, useLocations, useCreateShipment, useUpdateShipment, useDeleteShipment } from "@/hooks/use-api-data";
 import { TableLoading, TableError, TableEmpty } from "@/components/shared/table-states";
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
+import { SHIPMENT_STATUS_CONFIG } from "@/lib/constants";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { Shipment, ShipmentStatus } from "@/lib/api";
+
+/**
+ * Shipment form interface
+ */
+interface ShipmentForm {
+  trackingId: string;
+  fromLocationId: string;
+  toLocationId: string;
+  status: ShipmentStatus;
+  notes: string;
+}
+
+const emptyForm: ShipmentForm = {
+  trackingId: "",
+  fromLocationId: "",
+  toLocationId: "",
+  status: "PENDING",
+  notes: "",
+};
 
 /**
  * Shipments List Page
  *
- * Displays all shipments with filtering and tracking
+ * Displays all shipments with filtering, add/edit modals, and delete functionality
  */
 export default function ShipmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // Dialog states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [formData, setFormData] = useState<ShipmentForm>(emptyForm);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof ShipmentForm, string>>>({});
+
   const { data: shipments = [], isLoading, error, refetch } = useShipments();
+  const { data: locations = [] } = useLocations();
+
+  // Mock products data (TODO: replace with real API when available)
+  const products = [
+    { id: "1", name: "ECU Motor", sku: "ECU-001" },
+    { id: "2", name: "Sensor", sku: "SEN-001" },
+    { id: "3", name: "Brake Assembly", sku: "BRK-001" },
+    { id: "4", name: "Headlight Module", sku: "LHT-001" },
+    { id: "5", name: "Battery Pack", sku: "BAT-001" },
+    { id: "6", name: "Semikonduktor", sku: "SMC-001" },
+    { id: "7", name: "PCB Board", sku: "PCB-001" },
+    { id: "8", name: "Kapasitor", sku: "CAP-001" },
+  ];
+
+  // Mutations
+  const createMutation = useCreateShipment({
+    onSuccess: () => {
+      toast({
+        title: "Shipment created",
+        description: "Shipment has been created successfully.",
+      });
+      setIsAddModalOpen(false);
+      resetForm();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create shipment.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useUpdateShipment({
+    onSuccess: () => {
+      toast({
+        title: "Shipment updated",
+        description: "Shipment has been updated successfully.",
+      });
+      setIsEditModalOpen(false);
+      setSelectedShipment(null);
+      resetForm();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update shipment.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useDeleteShipment({
+    onSuccess: () => {
+      toast({
+        title: "Shipment deleted",
+        description: "Shipment has been deleted successfully.",
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedShipment(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete shipment.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Filter shipments based on search and status
   const filteredShipments = shipments.filter((shipment) => {
@@ -84,6 +208,106 @@ export default function ShipmentsPage() {
     }
   };
 
+  /**
+   * Reset form to empty state
+   */
+  function resetForm() {
+    setFormData(emptyForm);
+    setFormErrors({});
+  }
+
+  /**
+   * Generate tracking ID
+   */
+  function generateTrackingId(): string {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `TXF-${timestamp}-${random}`;
+  }
+
+  /**
+   * Open edit modal with shipment data
+   */
+  function openEditModal(shipment: Shipment) {
+    setSelectedShipment(shipment);
+    setFormData({
+      trackingId: shipment.trackingId,
+      fromLocationId: shipment.fromLocationId,
+      toLocationId: shipment.toLocationId,
+      status: shipment.status,
+      notes: shipment.notes || "",
+    });
+    setFormErrors({});
+    setIsEditModalOpen(true);
+  }
+
+  /**
+   * Open delete confirmation dialog
+   */
+  function openDeleteDialog(shipment: Shipment) {
+    setSelectedShipment(shipment);
+    setIsDeleteDialogOpen(true);
+  }
+
+  /**
+   * Validate form
+   */
+  function validateForm(): boolean {
+    const errors: Partial<Record<keyof ShipmentForm, string>> = {};
+
+    if (!formData.trackingId.trim()) errors.trackingId = "Tracking ID is required";
+    if (!formData.fromLocationId) errors.fromLocationId = "From location is required";
+    if (!formData.toLocationId) errors.toLocationId = "To location is required";
+    if (formData.fromLocationId === formData.toLocationId) {
+      errors.toLocationId = "From and To locations cannot be the same";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  /**
+   * Handle create shipment
+   */
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    createMutation.mutate(formData);
+  }
+
+  /**
+   * Handle update shipment
+   */
+  function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedShipment || !validateForm()) return;
+
+    updateMutation.mutate({
+      id: selectedShipment.id,
+      data: formData,
+    });
+  }
+
+  /**
+   * Handle delete shipment
+   */
+  function handleDelete() {
+    if (!selectedShipment) return;
+    deleteMutation.mutate(selectedShipment.id);
+  }
+
+  /**
+   * Handle input change
+   */
+  function handleInputChange(field: keyof ShipmentForm, value: string) {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error for this field
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -103,12 +327,16 @@ export default function ShipmentsPage() {
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Link href="/shipments/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Shipment
-            </Button>
-          </Link>
+          <Button
+            onClick={() => {
+              resetForm();
+              setFormData((prev) => ({ ...prev, trackingId: generateTrackingId() }));
+              setIsAddModalOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Shipment
+          </Button>
         </div>
       </div>
 
@@ -186,14 +414,47 @@ export default function ShipmentsPage() {
                   </TableCell>
                   <TableCell>{formatDate(shipment.createdAt)}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/shipments/${shipment.id}`}>View</Link>
-                      </Button>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/shipments/${shipment.id}/track`}>Track</Link>
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/shipments/${shipment.id}`}
+                            className="flex items-center cursor-pointer"
+                          >
+                            View Details
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/shipments/${shipment.id}/track`}
+                            className="flex items-center cursor-pointer"
+                          >
+                            Track Shipment
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditModal(shipment)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          <span>Edit</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-500 focus:text-red-500"
+                          onClick={() => openDeleteDialog(shipment)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -201,6 +462,252 @@ export default function ShipmentsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Add Shipment Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create New Shipment</DialogTitle>
+            <DialogDescription>
+              Create a new shipment to track products between locations.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreate}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="add-trackingId">Tracking ID *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="add-trackingId"
+                    value={formData.trackingId}
+                    onChange={(e) => handleInputChange("trackingId", e.target.value)}
+                    placeholder="e.g. TXF-001"
+                    className={formErrors.trackingId ? "border-red-500" : ""}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setFormData((prev) => ({ ...prev, trackingId: generateTrackingId() }))}
+                  >
+                    Generate
+                  </Button>
+                </div>
+                {formErrors.trackingId && <p className="text-xs text-red-500">{formErrors.trackingId}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="add-fromLocation">From Location *</Label>
+                  <Select
+                    value={formData.fromLocationId}
+                    onValueChange={(v) => handleInputChange("fromLocationId", v)}
+                  >
+                    <SelectTrigger id="add-fromLocation" className={formErrors.fromLocationId ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location) => (
+                        <SelectItem key={location.id} value={location.id}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.fromLocationId && <p className="text-xs text-red-500">{formErrors.fromLocationId}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="add-toLocation">To Location *</Label>
+                  <Select
+                    value={formData.toLocationId}
+                    onValueChange={(v) => handleInputChange("toLocationId", v)}
+                  >
+                    <SelectTrigger id="add-toLocation" className={formErrors.toLocationId ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations
+                        .filter((loc) => loc.id !== formData.fromLocationId)
+                        .map((location) => (
+                          <SelectItem key={location.id} value={location.id}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.toLocationId && <p className="text-xs text-red-500">{formErrors.toLocationId}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="add-status">Initial Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => handleInputChange("status", v as ShipmentStatus)}
+                >
+                  <SelectTrigger id="add-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(SHIPMENT_STATUS_CONFIG).map((status) => (
+                      <SelectItem key={status} value={status.toUpperCase()}>
+                        {SHIPMENT_STATUS_CONFIG[status as keyof typeof SHIPMENT_STATUS_CONFIG].label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="add-notes">Notes</Label>
+                <Input
+                  id="add-notes"
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange("notes", e.target.value)}
+                  placeholder="Additional notes..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Creating..." : "Create Shipment"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Shipment Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Shipment</DialogTitle>
+            <DialogDescription>
+              Update the shipment information.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdate}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-trackingId">Tracking ID *</Label>
+                <Input
+                  id="edit-trackingId"
+                  value={formData.trackingId}
+                  onChange={(e) => handleInputChange("trackingId", e.target.value)}
+                  placeholder="e.g. TXF-001"
+                  className={formErrors.trackingId ? "border-red-500" : ""}
+                />
+                {formErrors.trackingId && <p className="text-xs text-red-500">{formErrors.trackingId}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fromLocation">From Location *</Label>
+                  <Select
+                    value={formData.fromLocationId}
+                    onValueChange={(v) => handleInputChange("fromLocationId", v)}
+                  >
+                    <SelectTrigger id="edit-fromLocation" className={formErrors.fromLocationId ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location) => (
+                        <SelectItem key={location.id} value={location.id}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.fromLocationId && <p className="text-xs text-red-500">{formErrors.fromLocationId}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-toLocation">To Location *</Label>
+                  <Select
+                    value={formData.toLocationId}
+                    onValueChange={(v) => handleInputChange("toLocationId", v)}
+                  >
+                    <SelectTrigger id="edit-toLocation" className={formErrors.toLocationId ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations
+                        .filter((loc) => loc.id !== formData.fromLocationId)
+                        .map((location) => (
+                          <SelectItem key={location.id} value={location.id}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.toLocationId && <p className="text-xs text-red-500">{formErrors.toLocationId}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => handleInputChange("status", v as ShipmentStatus)}
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(SHIPMENT_STATUS_CONFIG).map((status) => (
+                      <SelectItem key={status} value={status.toUpperCase()}>
+                        {SHIPMENT_STATUS_CONFIG[status as keyof typeof SHIPMENT_STATUS_CONFIG].label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Input
+                  id="edit-notes"
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange("notes", e.target.value)}
+                  placeholder="Additional notes..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Updating..." : "Update Shipment"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Shipment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete shipment <span className="font-semibold">"{selectedShipment?.trackingId}"</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

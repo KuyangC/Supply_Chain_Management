@@ -4,6 +4,10 @@ import {
   SHIPMENT_STATUS_CONFIG,
   PRODUCT_STATUS_CONFIG,
   USER_STATUS_CONFIG,
+  SUPPLIER_STATUS_CONFIG,
+  TRANSFER_STATUS_CONFIG,
+  RETURN_STATUS_CONFIG,
+  PRODUCTION_BATCH_STATUS_CONFIG,
 } from "@/lib/constants";
 
 /**
@@ -19,10 +23,14 @@ interface StatusConfig {
 /**
  * Status options for different entity types
  */
-type StatusType = "shipment" | "product" | "user";
+type StatusType = "shipment" | "product" | "user" | "supplier" | "transfer" | "return" | "production_batch";
 type StatusValue = keyof typeof SHIPMENT_STATUS_CONFIG &
   keyof typeof PRODUCT_STATUS_CONFIG &
-  keyof typeof USER_STATUS_CONFIG;
+  keyof typeof USER_STATUS_CONFIG &
+  keyof typeof SUPPLIER_STATUS_CONFIG &
+  keyof typeof TRANSFER_STATUS_CONFIG &
+  keyof typeof RETURN_STATUS_CONFIG &
+  keyof typeof PRODUCTION_BATCH_STATUS_CONFIG;
 
 /**
  * Props for StatusBadge component
@@ -86,6 +94,42 @@ function getStatusConfig(type: StatusType, status: string): StatusConfig {
     case "user":
       return (
         USER_STATUS_CONFIG[normalizedStatus as keyof typeof USER_STATUS_CONFIG] || {
+          label: status,
+          color: "gray",
+          bgColor: "bg-gray-100",
+          textColor: "text-gray-700",
+        }
+      );
+    case "supplier":
+      return (
+        SUPPLIER_STATUS_CONFIG[normalizedStatus as keyof typeof SUPPLIER_STATUS_CONFIG] || {
+          label: status,
+          color: "gray",
+          bgColor: "bg-gray-100",
+          textColor: "text-gray-700",
+        }
+      );
+    case "transfer":
+      return (
+        TRANSFER_STATUS_CONFIG[normalizedStatus as keyof typeof TRANSFER_STATUS_CONFIG] || {
+          label: status,
+          color: "gray",
+          bgColor: "bg-gray-100",
+          textColor: "text-gray-700",
+        }
+      );
+    case "return":
+      return (
+        RETURN_STATUS_CONFIG[normalizedStatus as keyof typeof RETURN_STATUS_CONFIG] || {
+          label: status,
+          color: "gray",
+          bgColor: "bg-gray-100",
+          textColor: "text-gray-700",
+        }
+      );
+    case "production_batch":
+      return (
+        PRODUCTION_BATCH_STATUS_CONFIG[normalizedStatus as keyof typeof PRODUCTION_BATCH_STATUS_CONFIG] || {
           label: status,
           color: "gray",
           bgColor: "bg-gray-100",

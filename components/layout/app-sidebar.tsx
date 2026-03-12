@@ -14,11 +14,18 @@ import {
   ScrollText,
   Settings,
   LogOut,
+  Building,
+  ArrowRight,
+  RotateCcw,
+  Factory,
+  Store,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, SYSTEM_ITEMS } from "@/lib/constants";
+import { NAV_ITEMS_BY_LOCATION, SYSTEM_ITEMS, LOCATION_TYPE_CONFIG } from "@/lib/constants";
+import type { LocationType } from "@/lib/mock-data";
 
 /**
  * Map icon names to Lucide components
@@ -28,15 +35,22 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Package,
   Warehouse,
   Truck,
+  Building,
+  ArrowRight,
+  RotateCcw,
   Users,
   BarChart3,
   ScrollText,
   Settings,
   LogOut,
+  Factory,
+  Store,
+  Search,
 };
 
 interface SidebarProps {
   className?: string;
+  locationType?: LocationType;
 }
 
 /**
@@ -44,11 +58,15 @@ interface SidebarProps {
  *
  * Main navigation sidebar for the application with dark navy background (#1e293b).
  * Collapsible with smooth transitions.
+ * Navigation items are dynamic based on user's location type.
  */
-export function AppSidebar({ className }: SidebarProps) {
+export function AppSidebar({ className, locationType = "manufacturer" }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Get navigation items based on location type
+  const navItems = NAV_ITEMS_BY_LOCATION[locationType] || NAV_ITEMS_BY_LOCATION.manufacturer;
 
   const handleLogout = () => {
     // Clear auth token from localStorage
@@ -63,6 +81,9 @@ export function AppSidebar({ className }: SidebarProps) {
     router.push("/login");
   };
 
+  // Get location label for display
+  const locationLabel = LOCATION_TYPE_CONFIG[locationType]?.label || "Supply Chain";
+
   return (
     <aside
       className={cn(
@@ -74,7 +95,10 @@ export function AppSidebar({ className }: SidebarProps) {
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
         {!isCollapsed && (
-          <span className="text-lg font-semibold text-white">Supply Chain</span>
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-white">Supply Chain</span>
+            <span className="text-xs text-white/50">{locationLabel}</span>
+          </div>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -91,7 +115,7 @@ export function AppSidebar({ className }: SidebarProps) {
 
       {/* Main Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-thin p-2">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const isActive = pathname === item.href;
           const IconComponent = ICON_MAP[item.icon];
 
@@ -185,11 +209,17 @@ export function AppSidebar({ className }: SidebarProps) {
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3b82f6] text-white font-semibold">
-              A
+              {locationType === "supplier" && "S"}
+              {locationType === "manufacturer" && "M"}
+              {locationType === "warehouse" && "W"}
+              {locationType === "distributor" && "D"}
+              {locationType === "retail" && "R"}
             </div>
             <div className="flex min-w-0 flex-1 flex-col">
-              <p className="truncate text-sm font-medium text-white">Admin User</p>
-              <p className="truncate text-xs text-white/60">admin@supplychain.com</p>
+              <p className="truncate text-sm font-medium text-white">
+                {LOCATION_TYPE_CONFIG[locationType]?.label || "User"}
+              </p>
+              <p className="truncate text-xs text-white/60">Manager</p>
             </div>
           </div>
         </div>
