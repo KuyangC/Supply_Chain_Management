@@ -164,8 +164,8 @@ export function RetailDashboard({ data }: RetailDashboardProps) {
                   return (
                     <TableRow key={product.id} className="hover:bg-gray-50/50 border-b border-gray-50">
                       <TableCell className="font-medium text-gray-900">{product.product}</TableCell>
-                      <TableCell className="text-gray-600">{product.currentStock.toLocaleString()}</TableCell>
-                      <TableCell className="text-gray-600">{product.minStock.toLocaleString()}</TableCell>
+                      <TableCell className="text-gray-600">{product.currentStock.toLocaleString("en-US")}</TableCell>
+                      <TableCell className="text-gray-600">{product.minStock.toLocaleString("en-US")}</TableCell>
                       <TableCell>
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

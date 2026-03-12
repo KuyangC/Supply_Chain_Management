@@ -158,7 +158,7 @@ export function WarehouseDashboard({ data }: WarehouseDashboardProps) {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-gray-600">{shipment.quantity.toLocaleString()}</TableCell>
+                      <TableCell className="text-gray-600">{shipment.quantity.toLocaleString("en-US")}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -197,9 +197,9 @@ export function WarehouseDashboard({ data }: WarehouseDashboardProps) {
                   {data.stockSummary?.map((stock, index) => (
                     <TableRow key={index} className="hover:bg-gray-50/50 border-b border-gray-50">
                       <TableCell className="font-medium text-gray-900">{stock.product}</TableCell>
-                      <TableCell className="text-gray-600">{stock.rawQty.toLocaleString()}</TableCell>
-                      <TableCell className="text-gray-600">{stock.finishedQty.toLocaleString()}</TableCell>
-                      <TableCell className="font-medium text-gray-900">{stock.total.toLocaleString()}</TableCell>
+                      <TableCell className="text-gray-600">{stock.rawQty.toLocaleString("en-US")}</TableCell>
+                      <TableCell className="text-gray-600">{stock.finishedQty.toLocaleString("en-US")}</TableCell>
+                      <TableCell className="font-medium text-gray-900">{stock.total.toLocaleString("en-US")}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

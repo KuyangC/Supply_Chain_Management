@@ -28,7 +28,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
 import { useInventory } from "@/hooks/use-api-data";
 import { TableLoading, TableError, TableEmpty } from "@/components/shared/table-states";
 import { useState } from "react";
@@ -325,12 +324,7 @@ export default function InventoryPage() {
               filteredInventory.map((item) => (
                 <TableRow key={item.id} className="hover:bg-gray-50/50 border-b border-gray-50">
                   <TableCell className="font-medium text-gray-900">
-                    <Link
-                      href={`/products/${item.productId}`}
-                      className="hover:text-[#3b82f6] hover:underline transition-colors"
-                    >
-                      {item.product?.name || "Unknown"}
-                    </Link>
+                    {item.product?.name || "Unknown"}
                   </TableCell>
                   <TableCell className="font-mono text-sm text-gray-600">
                     {item.product?.sku || "-"}

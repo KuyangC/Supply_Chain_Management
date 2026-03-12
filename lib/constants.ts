@@ -4,17 +4,15 @@
 
 /**
  * Navigation menu items
+ *
+ * @deprecated This is being replaced by location-based navigation (NAV_ITEMS_BY_LOCATION).
+ * Kept for backward compatibility during migration.
  */
 export const NAV_ITEMS = [
   {
     title: "Dashboard",
     href: "/",
     icon: "LayoutDashboard",
-  },
-  {
-    title: "Products",
-    href: "/products",
-    icon: "Package",
   },
   {
     title: "Inventory",
@@ -27,31 +25,6 @@ export const NAV_ITEMS = [
     icon: "Truck",
   },
   {
-    title: "Suppliers",
-    href: "/suppliers",
-    icon: "Building",
-  },
-  {
-    title: "Transfers",
-    href: "/transfers",
-    icon: "ArrowRight",
-  },
-  {
-    title: "Returns",
-    href: "/returns",
-    icon: "RotateCcw",
-  },
-  {
-    title: "Users",
-    href: "/users",
-    icon: "Users",
-  },
-  {
-    title: "Analytics",
-    href: "/analytics",
-    icon: "BarChart3",
-  },
-  {
     title: "Event Logs",
     href: "/event-logs",
     icon: "ScrollText",
@@ -59,13 +32,18 @@ export const NAV_ITEMS = [
 ] as const;
 
 /**
- * System menu items (Settings, Logout)
+ * System menu items (Settings, Users, Logout)
  */
 export const SYSTEM_ITEMS = [
   {
     title: "Settings",
     href: "/settings",
     icon: "Settings",
+  },
+  {
+    title: "Users",
+    href: "/users",
+    icon: "Users",
   },
   {
     title: "Logout",

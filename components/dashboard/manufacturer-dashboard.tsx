@@ -146,7 +146,7 @@ export function ManufacturerDashboard({ data }: ManufacturerDashboardProps) {
                     <TableRow key={batch.id} className="hover:bg-gray-50/50 border-b border-gray-50">
                       <TableCell className="font-medium text-gray-900">{batch.id}</TableCell>
                       <TableCell className="text-gray-600">{batch.product}</TableCell>
-                      <TableCell className="text-gray-600">{batch.target.toLocaleString()}</TableCell>
+                      <TableCell className="text-gray-600">{batch.target.toLocaleString("en-US")}</TableCell>
                       <TableCell>
                         <StatusBadge status={batch.status} type="production_batch" />
                       </TableCell>
@@ -192,7 +192,7 @@ export function ManufacturerDashboard({ data }: ManufacturerDashboardProps) {
                       <TableCell className="font-medium text-gray-900">{shipment.id}</TableCell>
                       <TableCell className="text-gray-600">{shipment.from}</TableCell>
                       <TableCell className="text-gray-600">{shipment.product}</TableCell>
-                      <TableCell className="text-gray-600">{shipment.quantity.toLocaleString()}</TableCell>
+                      <TableCell className="text-gray-600">{shipment.quantity.toLocaleString("en-US")}</TableCell>
                       <TableCell className="text-gray-600">{shipment.date}</TableCell>
                     </TableRow>
                   ))}

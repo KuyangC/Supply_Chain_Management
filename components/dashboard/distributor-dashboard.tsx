@@ -192,7 +192,7 @@ export function DistributorDashboard({ data }: DistributorDashboardProps) {
                     <TableCell className="font-medium text-gray-900">{order.id}</TableCell>
                     <TableCell className="text-gray-600">{order.retailStore}</TableCell>
                     <TableCell className="text-gray-600">{order.product}</TableCell>
-                    <TableCell className="text-gray-600">{order.quantity.toLocaleString()}</TableCell>
+                    <TableCell className="text-gray-600">{order.quantity.toLocaleString("en-US")}</TableCell>
                     <TableCell>{getOrderStatusBadge(order.status)}</TableCell>
                   </TableRow>
                 ))}

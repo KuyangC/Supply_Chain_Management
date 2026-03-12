@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useDashboardData } from "@/hooks/use-location";
+import { useEffect } from "react";
+import { useLocation, useDashboardData } from "@/hooks/use-location";
 import { SupplierDashboard } from "@/components/dashboard/supplier-dashboard";
 import { ManufacturerDashboard } from "@/components/dashboard/manufacturer-dashboard";
 import { WarehouseDashboard } from "@/components/dashboard/warehouse-dashboard";
@@ -20,16 +20,12 @@ import type { LocationType } from "@/lib/mock-data";
  * - Retail: Stock overview and low stock alerts
  */
 export default function DashboardPage() {
-  // For testing: allow switching between location types
-  // In production, this would come from auth context
-  const [selectedLocation, setSelectedLocation] = useState<LocationType>("manufacturer");
-
-  // Get dashboard data based on selected location
-  const dashboardData = useDashboardData(selectedLocation);
+  const { locationType, setLocationType } = useLocation();
+  const dashboardData = useDashboardData(locationType);
 
   // Render the appropriate dashboard based on location type
   const renderDashboard = () => {
-    switch (selectedLocation) {
+    switch (locationType) {
       case "supplier":
         return <SupplierDashboard data={dashboardData} />;
       case "manufacturer":
@@ -53,7 +49,7 @@ export default function DashboardPage() {
     { value: "retail", label: "Retail", color: "bg-green-100 text-green-700" },
   ];
 
-  const currentLocationLabel = locationOptions.find((loc) => loc.value === selectedLocation)?.label || "Manufacturer";
+  const currentLocationLabel = locationOptions.find((loc) => loc.value === locationType)?.label || "Manufacturer";
 
   return (
     <div className="space-y-6">
@@ -73,10 +69,10 @@ export default function DashboardPage() {
             {locationOptions.map((option) => (
               <button
                 key={option.value}
-                onClick={() => setSelectedLocation(option.value)}
+                onClick={() => setLocationType(option.value)}
                 className={`
                   px-3 py-1.5 text-xs font-medium rounded-md transition-all
-                  ${selectedLocation === option.value
+                  ${locationType === option.value
                     ? `${option.color} shadow-sm`
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                   }

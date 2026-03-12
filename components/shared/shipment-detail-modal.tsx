@@ -121,7 +121,7 @@ export function ShipmentDetailModal({
             <div className="flex justify-between items-center pb-3 border-b border-gray-100">
               <span className="text-sm text-gray-500">Quantity Sent</span>
               <span className="font-medium text-gray-900">
-                {shipment.quantity.toLocaleString()} pcs
+                {shipment.quantity.toLocaleString("en-US")} pcs
               </span>
             </div>
           </div>
@@ -172,7 +172,7 @@ export function ShipmentDetailModal({
                 className="w-full"
               />
               <p className="text-xs text-gray-500">
-                Expected: {shipment.quantity.toLocaleString()} pcs
+                Expected: {shipment.quantity.toLocaleString("en-US")} pcs
               </p>
             </div>
 

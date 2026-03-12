@@ -6,75 +6,8 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query";
-import { productsApi, inventoryApi, shipmentsApi, usersApi, authApi, locationsApi, ApiError } from "@/lib/api";
-import type { Product, Inventory, Shipment, User, Location } from "@/lib/api";
-
-/**
- * Hook to fetch all products with optional pagination
- */
-export function useProducts(params?: { page?: number; limit?: number }) {
-  return useQuery({
-    queryKey: ["products", params],
-    queryFn: () => productsApi.getAll(params),
-  });
-}
-
-/**
- * Hook to fetch a single product by ID
- */
-export function useProduct(id: string) {
-  return useQuery({
-    queryKey: ["product", id],
-    queryFn: () => productsApi.getById(id),
-    enabled: !!id,
-  });
-}
-
-/**
- * Hook to create a product mutation
- */
-export function useCreateProduct(options?: Omit<UseMutationOptions<Product, ApiError, Parameters<typeof productsApi.create>[0]>, "mutationFn">) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: productsApi.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    },
-    ...options,
-  });
-}
-
-/**
- * Hook to update a product mutation
- */
-export function useUpdateProduct(options?: Omit<UseMutationOptions<Product, ApiError, { id: string; data: Parameters<typeof productsApi.update>[1] }>, "mutationFn">) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }) => productsApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", variables.id] });
-    },
-    ...options,
-  });
-}
-
-/**
- * Hook to delete a product mutation
- */
-export function useDeleteProduct(options?: Omit<UseMutationOptions<void, ApiError, string>, "mutationFn">) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: productsApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    },
-    ...options,
-  });
-}
+import { inventoryApi, shipmentsApi, usersApi, authApi, locationsApi, ApiError } from "@/lib/api";
+import type { Inventory, Shipment, User, Location } from "@/lib/api";
 
 /**
  * Hook to fetch all inventory items with optional filters

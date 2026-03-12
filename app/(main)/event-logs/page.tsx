@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState, useMemo } from "react";
-import { useShipments, useProducts, useUsers } from "@/hooks/use-api-data";
+import { useShipments, useUsers } from "@/hooks/use-api-data";
 import { api, ApiError } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -52,8 +52,13 @@ export default function EventLogsPage() {
 
   // Fetch real data for generating events
   const { data: shipments = [] } = useShipments();
-  const { data: products = [] } = useProducts();
   const { data: users = [] } = useUsers();
+
+  // Mock products data (TODO: replace with real API when available)
+  const products: Array<{ id: string; name: string; sku: string; category?: string; createdAt: string; updatedAt: string }> = [
+    { id: "1", name: "ECU Motor", sku: "ECU-001", category: "Electronics", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "2", name: "Sensor", sku: "SEN-001", category: "Electronics", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  ];
 
   // Fetch event logs from API (if endpoint exists)
   const { data: events = [], isLoading, error, refetch } = useQuery({

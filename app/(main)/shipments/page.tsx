@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useShipments, useLocations, useCreateShipment, useUpdateShipment, useDeleteShipment, useProducts } from "@/hooks/use-api-data";
+import { useShipments, useLocations, useCreateShipment, useUpdateShipment, useDeleteShipment } from "@/hooks/use-api-data";
 import { TableLoading, TableError, TableEmpty } from "@/components/shared/table-states";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -90,7 +90,18 @@ export default function ShipmentsPage() {
 
   const { data: shipments = [], isLoading, error, refetch } = useShipments();
   const { data: locations = [] } = useLocations();
-  const { data: products = [] } = useProducts();
+
+  // Mock products data (TODO: replace with real API when available)
+  const products = [
+    { id: "1", name: "ECU Motor", sku: "ECU-001" },
+    { id: "2", name: "Sensor", sku: "SEN-001" },
+    { id: "3", name: "Brake Assembly", sku: "BRK-001" },
+    { id: "4", name: "Headlight Module", sku: "LHT-001" },
+    { id: "5", name: "Battery Pack", sku: "BAT-001" },
+    { id: "6", name: "Semikonduktor", sku: "SMC-001" },
+    { id: "7", name: "PCB Board", sku: "PCB-001" },
+    { id: "8", name: "Kapasitor", sku: "CAP-001" },
+  ];
 
   // Mutations
   const createMutation = useCreateShipment({

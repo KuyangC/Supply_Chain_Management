@@ -14,6 +14,9 @@ import {
   type DashboardData,
 } from "@/lib/mock-data";
 
+// Re-export from provider for convenience
+export { useLocation } from "@/components/providers/location-provider";
+
 /**
  * Hook to get current user's location
  * In real app, this would come from auth context/API
